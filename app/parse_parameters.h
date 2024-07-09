@@ -133,6 +133,8 @@ int parse_parameters(int argn, char **argv,
                         orientation_config.algorithmType = MAXDECENDING;
                 } else if (strcmp("BFCS", algorithm->sval[0]) == 0) {
                         orientation_config.algorithmType = BRODAL_FAGERBERGCS;
+                } else if (strcmp("CCHHQRS", algorithm->sval[0]) == 0) {
+                        orientation_config.algorithmType = CCHHQRS;
                 } else {
                         fprintf(stderr, "Invalid algorithm: \"%s\"\n", algorithm->sval[0]);
                         exit(0);
