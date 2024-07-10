@@ -8,6 +8,7 @@
 #include "DeltaOrientationsResult.h"
 #include "DynEdgeOrientation.h"
 #include "dyn_graph_access.h"
+#include "buckets.h"
 
 class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
         public:
@@ -34,9 +35,9 @@ class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
                         return false;
                 }
         private:
-                int theta = 1;
-                int b = 1;
-                std::vector<std::map<int, int>> G_b;              // out neighbours and their multiplicity
+                std::vector<int> dp;                                    // out degrees
+                std::vector<std::map<int, int>> G_b;                    // out neighbours and their multiplicity
+                std::vector<Buckets> N_in;                              // in neighbours
                 std::vector< std::vector<NodeID> > m_adj;
                 void insert_directed(NodeID source, NodeID target);
                 void delete_directed(NodeID source, NodeID target);
