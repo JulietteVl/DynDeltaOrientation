@@ -39,14 +39,13 @@ class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
                 std::vector<std::map<int, int>> G_b;                    // out neighbours and their multiplicity
                 std::vector<Buckets> N_in;                              // in neighbours
                 std::vector< std::vector<NodeID> > m_adj;
-                void insert_directed(NodeID source, NodeID target);
+                void insert_directed(NodeID u, NodeID v);
                 void delete_directed(NodeID u, NodeID v);
-                void add(NodeID source, NodeID target);
-                void add_fast(NodeID source, NodeID target);
-                void remove(NodeID source, NodeID target);
-                void remove_fast(NodeID source, NodeID target);
+                void add(NodeID u, NodeID v);
+                void add_fast(NodeID u, NodeID v);
+                void remove(NodeID u, NodeID v);
+                void remove_fast(NodeID u, NodeID v);
                 int argmin_out(NodeID source);
-               // add whatever I need
 };
 
 #endif

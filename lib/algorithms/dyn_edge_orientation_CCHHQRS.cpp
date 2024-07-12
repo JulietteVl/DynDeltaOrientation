@@ -1,12 +1,12 @@
 #include "dyn_edge_orientation_CCHHQRS.h"
 #include <cmath>
 #include "random_functions.h"
-
-
+                
+                
 dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(const std::shared_ptr<dyn_graph_access>& GOrientation, const DeltaOrientationsConfig& config,
-                DeltaOrientationsResult& result)
-        : dyn_edge_orientation(GOrientation, config, result) {
-                m_adj.resize(GOrientation->number_of_nodes()); 
+                                                           DeltaOrientationsResult& result)
+    : dyn_edge_orientation(GOrientation, config, result) {
+        m_adj.resize(GOrientation->number_of_nodes());
 }
 
 void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source, NodeID target){
@@ -31,7 +31,22 @@ void dyn_edge_orientation_CCHHQRS::handleDeletion(NodeID source, NodeID target){
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::insert_directed(NodeID source, NodeID target){}      // TODO
+void dyn_edge_orientation_CCHHQRS::insert_directed(NodeID u, NodeID v){
+        add(u, v); // Search bucket to remove
+        int x = N_in[u].get_from_max_bucket();
+        if (dp[u] > std::max(config.b / 4, (1 + config.lambda) * dp[x] + config.theta)){
+                remove_fast(u, x); // Quick deletion
+                insert_directed(x, u);
+        }
+        else{
+                N_in[u].update_Bi(dp[u]);
+                for (auto it = G_b[u].begin(); it != G_b[u].end(); it++){
+                        int w = it->first;
+                        N_in[w].update(u, dp[u] - 1, dp[u]);
+                }
+        }
+}
+
 void dyn_edge_orientation_CCHHQRS::delete_directed(NodeID u, NodeID v){
         remove(u, v);      // Search bucket to insert
         int x = argmin_out(u);
@@ -42,23 +57,63 @@ void dyn_edge_orientation_CCHHQRS::delete_directed(NodeID u, NodeID v){
         else {
                 N_in[u].update_Bi(dp[u]);
                 for (auto it = G_b[u].begin(); it != G_b[u].end(); it++){
-                int w = it->first;
-                N_in[w].update(u, dp[u] + 1, dp[u]);
+                        int w = it->first;
+                        N_in[w].update(u, dp[u] + 1, dp[u]);
                 }
         }
 }
-void dyn_edge_orientation_CCHHQRS::add(NodeID source, NodeID target){}                  // TODO
-void dyn_edge_orientation_CCHHQRS::add_fast(NodeID source, NodeID target){}             // TODO
-void dyn_edge_orientation_CCHHQRS::remove(NodeID source, NodeID target){}               // TODO
-void dyn_edge_orientation_CCHHQRS::remove_fast(NodeID source, NodeID target){}          // TODO
-int  dyn_edge_orientation_CCHHQRS::argmin_out(NodeID source){
-        auto it = this->G_b[source].begin();
+
+void dyn_edge_orientation_CCHHQRS::add(NodeID u, NodeID v){
+        dp[u]++;
+        if (G_b[u].count(v) == 0){
+                G_b[u][v] = 1;
+                N_in[v].add(u, dp[u]);
+        }
+        else {
+                G_b[u][v]++;
+        }
+}
+
+void dyn_edge_orientation_CCHHQRS::add_fast(NodeID u, NodeID v){
+        dp[u]++;
+        if (G_b[u].count(v) == 0){
+                G_b[u][v] = 1;
+                N_in[v].add(u);
+        }
+        else {
+                G_b[u][v]++;
+        }
+}
+
+void dyn_edge_orientation_CCHHQRS::remove(NodeID u, NodeID v){
+        G_b[u][v]--;
+        if (G_b[u].count(v) == 0){
+                auto it = G_b[u].find(v);
+                G_b[u].erase(it);
+                N_in[v].remove(u, dp[u]);
+        }
+        dp[u]--;
+}
+
+void dyn_edge_orientation_CCHHQRS::remove_fast(NodeID u, NodeID v){
+        G_b[u][v]--;
+        if (G_b[u].count(v) == 0){
+                auto it = G_b[u].find(v);
+                G_b[u].erase(it);
+                N_in[v].remove(u); // quick deletion
+        }
+        dp[u]--;
+}
+
+int dyn_edge_orientation_CCHHQRS::argmin_out(NodeID source)
+{
+        auto it = G_b[source].begin();
         int mini = it->second;
         int x = it->first;
-        for (it; it != G_b[source].end(); it++){
+        for (it; it != G_b[source].end(); it++){                
                 if (it->second < mini){
-                mini = it->second;
-                x = it->first;
+                        mini = it->second;
+                        x = it->first;
                 }
         }
         return x;
