@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <map>
+#include <bits/stdc++.h>
 
 #include "DeltaOrientationsConfig.h"
 #include "DeltaOrientationsResult.h"

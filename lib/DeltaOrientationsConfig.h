@@ -37,7 +37,7 @@ class DeltaOrientationsConfig {
     // CCHHQRS
     unsigned b = 2;         // TODO default value?
     unsigned lambda = 2;    // TODO default value?
-    unsigned theta = 2;     // TODO default value?
+    unsigned theta = 1;     // TODO default value?
 
     // Brodal & Fagerberg
     unsigned delta = 0; // maintain delta-orientation

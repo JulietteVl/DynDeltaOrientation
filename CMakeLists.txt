@@ -47,6 +47,7 @@ add_definitions(-fpermissive)
 
 SET(DELTA-ORIENTATIONS_CXX_FILES
         lib/data_structure/dyn_graph_access.cpp
+        lib/data_structure/buckets.cpp
         lib/io/graph_io.cpp
         lib/tools/timer.cpp
         lib/tools/random_functions.cpp
