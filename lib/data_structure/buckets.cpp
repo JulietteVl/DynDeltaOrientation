@@ -1,5 +1,7 @@
 #include "buckets.h"
 
+Buckets::Buckets(){}
+
 Buckets::Buckets(const DeltaOrientationsConfig& config){
     this->config = config;
     i_top = log(config.b / 4)/log(1 + config.lambda); // d = 0

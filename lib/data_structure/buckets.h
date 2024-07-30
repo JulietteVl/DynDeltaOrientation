@@ -16,6 +16,7 @@ protected:
     
 public:
     DeltaOrientationsConfig config;
+    Buckets();
     Buckets(const DeltaOrientationsConfig& config);
     ~Buckets();
     void add(int u);

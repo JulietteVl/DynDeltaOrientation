@@ -36,10 +36,10 @@ class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
                         return false;
                 }
         private:
+                std::vector< std::vector<NodeID> > m_adj;
                 std::vector<int> dp;                                    // out degrees
                 std::vector<std::map<int, int>> G_b;                    // out neighbours and their multiplicity
                 std::vector<Buckets> N_in;                              // in neighbours
-                std::vector< std::vector<NodeID> > m_adj;
                 void insert_directed(NodeID u, NodeID v);
                 void delete_directed(NodeID u, NodeID v);
                 void delete_directed_fast(NodeID u, NodeID v);

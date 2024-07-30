@@ -7,6 +7,10 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(const std::shared_ptr
                                                            DeltaOrientationsResult& result)
     : dyn_edge_orientation(GOrientation, config, result) {
         m_adj.resize(GOrientation->number_of_nodes());
+        dp.resize(GOrientation->number_of_nodes());
+        G_b.resize(GOrientation->number_of_nodes());
+        N_in.resize(GOrientation->number_of_nodes());
+        // TODO initialise buckets with config
 }
 
 void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source, NodeID target){
@@ -121,8 +125,7 @@ void dyn_edge_orientation_CCHHQRS::remove_fast(NodeID u, NodeID v){
         dp[u]--;
 }
 
-int dyn_edge_orientation_CCHHQRS::argmin_out(NodeID source)
-{
+int dyn_edge_orientation_CCHHQRS::argmin_out(NodeID source){
         auto it = G_b[source].begin();
         int mini = it->second;
         int x = it->first;
