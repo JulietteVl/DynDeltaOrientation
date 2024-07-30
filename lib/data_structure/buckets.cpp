@@ -26,8 +26,9 @@ void Buckets::add(int u, int du){
 }
 
 
-void Buckets::remove(int u){
-    Bi->second.remove(u);
+// Remove the element that we would get_from_max_bucket()
+void Buckets::remove_top(){
+    buckets.rbegin()->second.pop_front();
 }
 
 
@@ -104,11 +105,6 @@ void Buckets::update_Bi(int dv){
 }
 
 
-int Buckets::get_n_max_bucket(){
-    return buckets.rbegin()->first;
-}
-
-
 int Buckets::get_from_max_bucket(){
     return buckets.rbegin()->second.front();
 }
@@ -122,6 +118,3 @@ auto Buckets::rbegin(){
 auto Buckets::rend(){
     return buckets.rend();
 }
-
-
-int Buckets::get_i(){return this->i_top;}

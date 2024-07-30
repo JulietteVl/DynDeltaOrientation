@@ -42,6 +42,7 @@ class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
                 std::vector< std::vector<NodeID> > m_adj;
                 void insert_directed(NodeID u, NodeID v);
                 void delete_directed(NodeID u, NodeID v);
+                void delete_directed_fast(NodeID u, NodeID v);
                 void add(NodeID u, NodeID v);
                 void add_fast(NodeID u, NodeID v);
                 void remove(NodeID u, NodeID v);

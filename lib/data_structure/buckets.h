@@ -20,7 +20,7 @@ public:
     ~Buckets();
     void add(int u);
     void add(int u, int du);
-    void remove(int u);
+    void remove_top();
     void remove(int u, int th);
     void update(int u, int du_prev, int du);  // move u in a bucket given its out degree
     void update_Bi(int dv); // Check if Bi should be updated when the outdegree of the node change.
@@ -28,8 +28,6 @@ public:
     auto rbegin();
     auto rend();
     int get_from_max_bucket();
-    int get_n_max_bucket();
-    int get_i();
 };
 
 #endif // BUCKETS_H
