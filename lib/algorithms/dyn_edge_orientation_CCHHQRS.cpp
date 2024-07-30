@@ -10,7 +10,9 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(const std::shared_ptr
         dp.resize(GOrientation->number_of_nodes());
         G_b.resize(GOrientation->number_of_nodes());
         N_in.resize(GOrientation->number_of_nodes());
-        // TODO initialise buckets with config
+        for (int i = 0; i < GOrientation->number_of_nodes(); i++){
+                N_in[i] = Buckets(config);
+        }
 }
 
 void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source, NodeID target){
