@@ -4,9 +4,10 @@ Buckets::Buckets(){}
 
 Buckets::Buckets(const DeltaOrientationsConfig& config){
     this->config = config;
-    i_top = log(config.b / 4)/log(1 + config.lambda); // d = 0
+    i_top = static_cast<int>(log(config.b / 4)/log(1 + config.lambda)); // d = 0
     buckets.push_back(make_pair(i_top, std::list<int>()));
-    Bi = buckets.end()--;
+    Bi = buckets.end();
+    Bi = prev(Bi);
 }
 
 
@@ -20,9 +21,9 @@ void Buckets::add(int u){
 
 void Buckets::add(int u, int du){
     int j = du;
-    for(auto it = buckets.begin(); it != buckets.end(); it ++){
-        if (it->first = j){
-            it->second.push_back(u);
+    for(auto & bucket : buckets){
+        if (bucket.first == j){
+            bucket.second.push_back(u);
         }
     }
 }
