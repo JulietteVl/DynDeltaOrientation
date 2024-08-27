@@ -89,7 +89,7 @@ void dyn_edge_orientation_CCHHQRS::add(NodeID u, NodeID v){
         dp[u]++;
         if (G_b[u].count(v) == 0){
                 G_b[u][v] = 1;
-                N_in[v].add(u, dp[u]);
+                N_in[v].add(u, dp[u], v_ptr);
         }
         else {
                 G_b[u][v]++;
@@ -98,9 +98,9 @@ void dyn_edge_orientation_CCHHQRS::add(NodeID u, NodeID v){
 
 void dyn_edge_orientation_CCHHQRS::add_fast(NodeID u, NodeID v){
         dp[u]++;
-        if (G_b[u].count(v) == 0){
-                G_b[u][v] = 1;
-                N_in[v].add(u);
+        if (G_b[u].count(v) == 0){              // TODO faster
+                G_b[u][v] = 1;                  // TODO faster
+                N_in[v].add(u, v_ptr);
         }
         else {
                 G_b[u][v]++;
@@ -120,7 +120,7 @@ void dyn_edge_orientation_CCHHQRS::remove(NodeID u, NodeID v){
 void dyn_edge_orientation_CCHHQRS::remove_fast(NodeID u, NodeID v){
         G_b[u][v]--;
         if (G_b[u].count(v) == 0){
-                auto it = G_b[u].find(v);
+                auto it = G_b[u].find(v);                       // TODO faster
                 G_b[u].erase(it);
                 N_in[v].remove_top(); // quick deletion
         }
