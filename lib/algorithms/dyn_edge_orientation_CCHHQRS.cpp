@@ -106,7 +106,7 @@ void dyn_edge_orientation_CCHHQRS::add(NodeID u, NodeID v){
         }
         else {
                 G_b[u].push_back(std::make_pair(v, 1));
-                auto uv_iterator = std::prev(G_b[u].end);
+                auto uv_iterator = std::prev(G_b[u].end());
                 N_in[v].add(u, dp[u], uv_iterator);
         }
 }
@@ -118,7 +118,7 @@ void dyn_edge_orientation_CCHHQRS::add_fast(NodeID u, NodeID v, std::list<std::p
         }
         else {
                 G_b[u].push_back(std::make_pair(v, 1));
-                uv_iterator = std::prev(G_b[u].end);
+                uv_iterator = std::prev(G_b[u].end());
                 N_in[v].add(u, dp[u], uv_iterator);
         }
 }
