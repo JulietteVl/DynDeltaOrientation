@@ -56,7 +56,8 @@ void dyn_edge_orientation_CCHHQRS::insert_directed(NodeID u, NodeID v){ // NOLIN
         }
         else{
                 N_in[u].update_Bi(dp[u]);
-                for (auto it = G_b[u].begin(); it != G_b[u].end(); ++it){
+                if (dp[u] <= 1){ return; }              // If there was no outneigbours, there is nothing to update
+                for (auto it = G_b[u].begin(); it != G_b[u].end(); ++it){ //  for all the outneighbours of u
                         NodeID w = it->first;
                         N_in[w].update(u, dp[u] - 1, dp[u]);
                 }
@@ -80,7 +81,7 @@ void dyn_edge_orientation_CCHHQRS::delete_directed(NodeID u, NodeID v){ // NOLIN
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::delete_directed_fast(NodeID u, NodeID v, list<pair<NodeID, int>>::iterator uv_iterator){
+void dyn_edge_orientation_CCHHQRS::delete_directed_fast(NodeID u, NodeID v, out_neighbour_iterator uv_iterator){
         remove_fast(u, v, uv_iterator);
         auto ux_iterator = N_in[u].get_from_max_bucket();
         NodeID x = ux_iterator->first;
@@ -131,8 +132,8 @@ void dyn_edge_orientation_CCHHQRS::remove(NodeID u, NodeID v){
         it->second--;
         // if the new multiplicity is 0, remove the element.
         if (it->second <= 0){
-                G_b[u].erase(it);
                 N_in[v].remove(u, dp[u]);
+                G_b[u].erase(it);
         }
         dp[u]--;
 }
@@ -147,7 +148,7 @@ void dyn_edge_orientation_CCHHQRS::remove_fast(NodeID u, NodeID v, std::list<std
 }
 
 // return the out neighbour of lowest out degree
-list<pair<NodeID, int>>::iterator dyn_edge_orientation_CCHHQRS::argmin_out(NodeID source){
+out_neighbour_iterator dyn_edge_orientation_CCHHQRS::argmin_out(NodeID source){
         auto it = G_b[source].begin();
         int mini = dp[it->first];
         auto it_mini = it;

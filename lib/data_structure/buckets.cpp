@@ -8,7 +8,7 @@ Buckets::Buckets()
 Buckets::Buckets(const DeltaOrientationsConfig& config){
     this->config = config;
     i_top = static_cast<int>(log(config.b / 4)/log(1 + config.lambda)); // d = 0
-    buckets.push_back(make_pair(i_top, list<pair<NodeID, list<pair<NodeID, int>>::iterator>>()));
+    buckets.push_back(SingleBucket(i_top, list<BucketElement>()));
     Bi = buckets.end();
     Bi = prev(Bi);
 }
@@ -17,18 +17,22 @@ Buckets::Buckets(const DeltaOrientationsConfig& config){
 Buckets::~Buckets()= default;
 
 
-void Buckets::add(NodeID u, list<pair<NodeID, int>>::iterator uv_iterator) const{
-    Bi->second.push_back(make_pair(u, uv_iterator));
+void Buckets::add(NodeID u, out_neighbour_iterator uv_iterator) const{
+    Bi->bucket.push_back(BucketElement(u, uv_iterator));
 }
-list<pair<int, list<
-        pair<int, int*>    // Each element of Bj, representing u as an in neighbour of v,
-    >>> buckets;
 
-void Buckets::add(NodeID u, int du, list<pair<NodeID, int>>::iterator uv_iterator){
-    int j = du;
-    for(auto & bucket : buckets){
-        if (bucket.first == j){
-            bucket.second.push_back(make_pair(u, uv_iterator));
+void Buckets::add(NodeID u, int du, out_neighbour_iterator uv_iterator){
+    int j = static_cast<int>(log(du)/log(1 + config.lambda));
+    for (auto B = buckets.begin(); B != buckets.end(); ++B){
+        if (B->bucketID == j){
+            B->bucket.push_back(BucketElement(u, uv_iterator));
+            return;
+        }
+        if (B->bucketID > j){
+            list<BucketElement> Bj;
+            Bj.push_back(BucketElement(u, uv_iterator));
+            buckets.insert(B, SingleBucket(j, Bj));
+            return;
         }
     }
 }
@@ -36,30 +40,53 @@ void Buckets::add(NodeID u, int du, list<pair<NodeID, int>>::iterator uv_iterato
 
 // Remove the element that we would get_from_max_bucket()
 void Buckets::remove_top(){
-    buckets.rbegin()->second.pop_front();
+    // TODO don't pop unless multiplicity is 0
+    buckets.rbegin()->bucket.pop_front();
 }
 
-
-list<pair<NodeID, int>>::iterator Buckets::remove(NodeID u, int j){
+// Should only be called if multiplicity is 0
+void Buckets::remove(NodeID u, int j){
     // Find the bucket
-    auto is_bucket = [&j](const pair<int, list<pair<NodeID,list<pair<NodeID, int>>::iterator>>> &bucket){return bucket.first == j;};
+    auto is_bucket = [&j](const SingleBucket &B) { return B.bucketID == j; };
     auto it = find_if(buckets.begin(), buckets.end(), is_bucket);
-    auto Bj = it->second;
+    auto Bj = it->bucket;
+
     // Find the vertex in the bucket
-    auto is_target = [&u](const pair<int,list<pair<NodeID, int>>::iterator> &w){return w.first == u;};
+    auto is_target = [&u](const pair<int, out_neighbour_iterator> &w) { return w.first == u; };
     auto it2 = find_if(Bj.begin(), Bj.end(), is_target);
-    auto uv_iterator = it2->second;
-    it->second.erase(it2);          // erase the vertex from the bucket
-    if (it->second.empty()){        // if the bucket is empty,
-        buckets.erase(it);          // remove it
+
+    it->bucket.erase(it2);            // Erase the vertex from the bucket
+
+    if (it->bucket.empty() and it != Bi) {  // If the bucket is empty,
+        buckets.erase(it);                // Remove it
     }
-    return uv_iterator;
 }
 
 
 void Buckets::update(NodeID u, int du_prev, int du){
-    auto uv_iterator = remove(u, du_prev);
-    add(u, du, uv_iterator);
+    // check if the outdegree of u leads to a different bucket
+    int j_prev = static_cast<int>(log(du_prev)/log(1 + config.lambda));
+    int j      = static_cast<int>(log(du     )/log(1 + config.lambda));
+    if (j_prev == j){return;}
+    // If it does, remove all the occurences of u in that bucket
+    // Find the previous bucket
+    auto is_bucket = [&j_prev](const pair<int, list<pair<NodeID, out_neighbour_iterator>>> &B) { return B.first == j_prev; };
+    auto it = find_if(buckets.begin(), buckets.end(), is_bucket);
+    auto Bj = it->bucket;
+
+    // Remove all occurrences in outdated bucket
+    auto it2 = Bj.begin();
+    auto is_target = [&u](const pair<int, out_neighbour_iterator> &w) { return w.first == u; };
+    while (it2 != Bj.end())
+    {
+        it2 = find_if(Bj.begin(), Bj.end(), is_target);
+        auto uv_iterator = it2->out_iterator;   // Store the iterator in a variable
+        it->bucket.erase(it2);                // Erase the vertex from the bucket
+        add(u, du, uv_iterator);                // could be a little faster
+    }
+    if (it->bucket.empty() & it != Bi) {        // If the bucket is empty, and is not Bi
+        buckets.erase(it);                    // Remove it
+    }
 }
 
 
@@ -70,36 +97,36 @@ void Buckets::update_Bi(int dv){
     ))/log(1 + config.lambda));
 
     if (i > i_top){
-        while(i > i_top){
+         while(i > i_top & Bi != buckets.end()){
             Bi = next(Bi);      // Find the successor of i
             if (Bi == buckets.end()){
                 i_top = i + 1;  // Bi.second is undefined
             }
             else{
-                i_top = Bi->first;
+                i_top = Bi->bucketID;
             }
         }
         // No bucket that has index exactly i? Make one
         if (i_top > i){ // We went too far
-            buckets.insert(Bi, make_pair(i, list<pair<NodeID, list<pair<NodeID, int>>::iterator>>()));
+            buckets.insert(Bi, SingleBucket(i, list<BucketElement>()));
             Bi = prev(Bi);
             i_top = i;
         }
     }
     if (i < i_top){
-        while(i < i_top){               // Find predecessor of i
-            if (Bi == buckets.begin()){ // Cannot use prev on begin(), just solve right away.
-                buckets.insert(Bi, make_pair(i, list<pair<NodeID, list<pair<NodeID, int>>::iterator>>()));
+        while(i < i_top){                // Find predecessor of i
+            if (Bi == buckets.begin()){  // Cannot use prev on begin(), just solve right away.
+                buckets.insert(Bi, SingleBucket(i, list<BucketElement>()));
                 Bi = prev(Bi);           // Bi is the bucket we just inserted
                 i_top = i;
             }
             else{
                 Bi = prev(Bi);
-                i_top = Bi->first;
+                i_top = Bi->bucketID;
                 // No bucket that has index exactly Bi? Make one
                 if (i_top < i){             // We went too far backward
                     Bi = next(Bi);          // insert will insert before pos, so we go back forward once.
-                    buckets.insert(Bi, make_pair(i, list<pair<NodeID, list<pair<NodeID, int>>::iterator>>()));
+                    buckets.insert(Bi, SingleBucket(i, list<BucketElement>()));
                     Bi = prev(Bi);          // Bi is the bucket we just inserted
                     i_top = i;
                 }
@@ -110,6 +137,7 @@ void Buckets::update_Bi(int dv){
 }
 
 
-_List_iterator<pair<unsigned int, int>>  Buckets::get_from_max_bucket(){
-    return buckets.rbegin()->second.begin()->second;
+list<pair<NodeID, int>>::iterator Buckets::get_from_max_bucket()
+{
+    return buckets.rbegin()->bucket.begin()->out_iterator;
 }
