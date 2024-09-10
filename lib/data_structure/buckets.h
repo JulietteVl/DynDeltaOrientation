@@ -14,17 +14,17 @@ struct BucketElement{
     // Instead of having duplicates, we refer to the multiplicity in Gb, accessible through the iterator.
     NodeID node;
     list<pair<NodeID, int>>::iterator out_iterator;
-    BucketElement();
+    BucketElement(){}
     BucketElement(NodeID n, out_neighbour_iterator it){node = n; out_iterator = it;}
-    ~BucketElement();
+    ~BucketElement(){}
 };
 
 struct SingleBucket{
     unsigned int bucketID;
     list<BucketElement> bucket;
-    SingleBucket();
+    SingleBucket(){}
     SingleBucket(unsigned int bucket_ID, const list<BucketElement> &B){bucketID = bucket_ID; bucket = B;}
-    ~SingleBucket();
+    ~SingleBucket(){}
 };
 
 class Buckets{

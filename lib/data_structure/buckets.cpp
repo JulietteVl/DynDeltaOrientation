@@ -52,12 +52,12 @@ void Buckets::remove(NodeID u, int j){
     auto Bj = it->bucket;
 
     // Find the vertex in the bucket
-    auto is_target = [&u](const pair<int, out_neighbour_iterator> &w) { return w.first == u; };
+    auto is_target = [&u](const BucketElement &w) { return w.node == u; };
     auto it2 = find_if(Bj.begin(), Bj.end(), is_target);
 
     it->bucket.erase(it2);                // Erase the vertex from the bucket
 
-    if (it->bucket.empty() and it != Bi) {  // If the bucket is empty,
+    if (it->bucket.empty() and it->bucketID != i_top) {  // If the bucket is empty,
         buckets.erase(it);                // Remove it
     }
 }
@@ -70,13 +70,13 @@ void Buckets::update(NodeID u, int du_prev, int du){
     if (j_prev == j){return;}
     // If it does, remove all the occurences of u in that bucket
     // Find the previous bucket
-    auto is_bucket = [&j_prev](const pair<int, list<pair<NodeID, out_neighbour_iterator>>> &B) { return B.first == j_prev; };
+    auto is_bucket = [&j_prev](const SingleBucket &B) { return B.bucketID == j_prev; };
     auto it = find_if(buckets.begin(), buckets.end(), is_bucket);
     auto Bj = it->bucket;
 
     // Remove all occurrences in outdated bucket
     auto it2 = Bj.begin();
-    auto is_target = [&u](const pair<int, out_neighbour_iterator> &w) { return w.first == u; };
+    auto is_target = [&u](const BucketElement &w) { return w.node == u; };
     while (it2 != Bj.end())
     {
         it2 = find_if(Bj.begin(), Bj.end(), is_target);
@@ -84,7 +84,7 @@ void Buckets::update(NodeID u, int du_prev, int du){
         it->bucket.erase(it2);                // Erase the vertex from the bucket
         add(u, du, uv_iterator);                // could be a little faster
     }
-    if (it->bucket.empty() & it != Bi) {        // If the bucket is empty, and is not Bi
+    if (it->bucket.empty() & it->bucketID != i_top) {        // If the bucket is empty, and is not Bi
         buckets.erase(it);                    // Remove it
     }
 }
