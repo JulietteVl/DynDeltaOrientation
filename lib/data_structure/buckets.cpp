@@ -39,8 +39,8 @@ void Buckets::add(NodeID u, int du, out_neighbour_iterator uv_iterator){
 
 
 // Remove the element that we would get_from_max_bucket()
+// Should only be called if multiplicity is 0
 void Buckets::remove_top(){
-    // TODO don't pop unless multiplicity is 0
     buckets.rbegin()->bucket.pop_front();
 }
 
@@ -55,7 +55,7 @@ void Buckets::remove(NodeID u, int j){
     auto is_target = [&u](const pair<int, out_neighbour_iterator> &w) { return w.first == u; };
     auto it2 = find_if(Bj.begin(), Bj.end(), is_target);
 
-    it->bucket.erase(it2);            // Erase the vertex from the bucket
+    it->bucket.erase(it2);                // Erase the vertex from the bucket
 
     if (it->bucket.empty() and it != Bi) {  // If the bucket is empty,
         buckets.erase(it);                // Remove it
@@ -97,7 +97,7 @@ void Buckets::update_Bi(int dv){
     ))/log(1 + config.lambda));
 
     if (i > i_top){
-         while(i > i_top & Bi != buckets.end()){
+        while(i > i_top & Bi != buckets.end()){
             Bi = next(Bi);      // Find the successor of i
             if (Bi == buckets.end()){
                 i_top = i + 1;  // Bi.second is undefined
@@ -137,7 +137,6 @@ void Buckets::update_Bi(int dv){
 }
 
 
-list<pair<NodeID, int>>::iterator Buckets::get_from_max_bucket()
-{
+list<pair<NodeID, int>>::iterator Buckets::get_from_max_bucket(){
     return buckets.rbegin()->bucket.begin()->out_iterator;
 }
