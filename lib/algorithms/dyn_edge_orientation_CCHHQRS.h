@@ -35,9 +35,9 @@ class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
                 }
         private:
                 vector< vector<NodeID> > m_adj;
-                vector<int> dp;                                    // out degrees
-                vector<list<pair<NodeID, int>>> G_b;     // out neighbours + multiplicity
-                vector<Buckets> N_in;                              // in neighbours
+                vector<int> dp;                                 // out degrees
+                vector<list<pair<NodeID, int>>> G_b;            // out neighbours + multiplicity
+                vector<Buckets> N_in;                           // in neighbours
                 void insert_directed(NodeID u, NodeID v);
                 void delete_directed(NodeID u, NodeID v);
                 void delete_directed_fast(NodeID u, NodeID v, list<pair<NodeID, int>>::iterator uv_iterator);

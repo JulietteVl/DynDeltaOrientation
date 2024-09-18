@@ -2,13 +2,13 @@
 
 Buckets::Buckets()
 {
-    i_top = 0; // Will be updated
+    i_fast = 0; // Will be updated
 }
 
 Buckets::Buckets(const DeltaOrientationsConfig& config){
     this->config = config;
-    i_top = static_cast<int>(log(config.b / 4)/log(1 + config.lambda)); // d = 0
-    buckets.push_back(SingleBucket(i_top, list<BucketElement>()));
+    i_fast = static_cast<int>(log(config.b / 4)/log(1 + config.lambda)); // d = 0
+    buckets.push_back(SingleBucket(i_fast, list<BucketElement>()));
     Bi = buckets.end();
     Bi = prev(Bi);
 }
@@ -57,7 +57,7 @@ void Buckets::remove(NodeID u, int j){
 
     it->bucket.erase(it2);                // Erase the vertex from the bucket
 
-    if (it->bucket.empty() and it->bucketID != i_top) {  // If the bucket is empty,
+    if (it->bucket.empty() and it->bucketID != i_fast) {  // If the bucket is empty,
         buckets.erase(it);                // Remove it
     }
 }
@@ -74,65 +74,67 @@ void Buckets::update(NodeID u, int du_prev, int du){
     auto it = find_if(buckets.begin(), buckets.end(), is_bucket);
     auto Bj = it->bucket;
 
-    // Remove all occurrences in outdated bucket
-    auto it2 = Bj.begin();
+    // Remove u in outdated bucket
     auto is_target = [&u](const BucketElement &w) { return w.node == u; };
-    while (it2 != Bj.end())
-    {
-        it2 = find_if(Bj.begin(), Bj.end(), is_target);
-        auto uv_iterator = it2->out_iterator;   // Store the iterator in a variable
-        it->bucket.erase(it2);                // Erase the vertex from the bucket
-        add(u, du, uv_iterator);                // could be a little faster
-    }
-    if (it->bucket.empty() & it->bucketID != i_top) {        // If the bucket is empty, and is not Bi
-        buckets.erase(it);                    // Remove it
+    auto it2 = find_if(Bj.begin(), Bj.end(), is_target);
+    auto uv_iterator = it2->out_iterator;   // Store the iterator in a variable
+    it->bucket.erase(it2);                // Erase the vertex from the bucket
+    add(u, du, uv_iterator);                // could be a little faster
+
+    if (it->bucket.empty() & it->bucketID != i_fast) {    // If the bucket is empty, and is not Bi
+        buckets.erase(it);                              // Remove it
     }
 }
 
 
 void Buckets::update_Bi(int dv){
-    // This is the value that i_top should have by the end of the function
-    int i = static_cast<int> (log(max(
+    // This is the value that i_fast should have by the end of the function
+    int new_i = static_cast<int> (log(max(
         (1 + config.lambda) * dv, config.b / 4
     ))/log(1 + config.lambda));
+    int i_top = buckets.rbegin()->bucketID;
+    if (new_i = i_fast){ return; }
 
-    if (i > i_top){
-        while(i > i_top & Bi != buckets.end()){
-            Bi = next(Bi);      // Find the successor of i
-            if (Bi == buckets.end()){
-                i_top = i + 1;  // Bi.second is undefined
-            }
-            else{
-                i_top = Bi->bucketID;
-            }
+    if (new_i > i_top)
+    {
+        // TODO push back bucket at the end, it is Bi
+        buckets.push_back(SingleBucket(new_i, list<BucketElement>()));
+        Bi = prev(buckets.end());
+        i_fast = new_i;
+        return;
+    }
+    if (new_i > i_fast){
+        while(i_fast < new_i & i_fast < i_top){
+            Bi = next(Bi);           // Find the successor of new_i
+            i_fast = Bi->bucketID;
         }
-        // No bucket that has index exactly i? Make one
-        if (i_top > i){ // We went too far
-            buckets.insert(Bi, SingleBucket(i, list<BucketElement>()));
+    // No bucket that has index exactly new_i? Make one
+        if (i_fast > new_i){ // We went too far
+            buckets.insert(Bi, SingleBucket(new_i, list<BucketElement>()));
             Bi = prev(Bi);
-            i_top = i;
+            i_fast = new_i;
+            return;
         }
     }
-    if (i < i_top){
-        while(i < i_top){                // Find predecessor of i
-            if (Bi == buckets.begin()){  // Cannot use prev on begin(), just solve right away.
-                buckets.insert(Bi, SingleBucket(i, list<BucketElement>()));
-                Bi = prev(Bi);           // Bi is the bucket we just inserted
-                i_top = i;
+    if (new_i < i_fast){
+        while(new_i < i_fast){              // Find predecessor of new_i
+            if (Bi == buckets.begin()){     // Cannot use prev on begin(), just solve right away.
+                buckets.insert(Bi, SingleBucket(new_i, list<BucketElement>()));
+                Bi = prev(Bi);              // Bi is the bucket we just inserted
+                i_fast = new_i;
             }
             else{
                 Bi = prev(Bi);
-                i_top = Bi->bucketID;
+                i_fast = Bi->bucketID;
                 // No bucket that has index exactly Bi? Make one
-                if (i_top < i){             // We went too far backward
+                if (i_fast < new_i){             // We went too far backward
                     Bi = next(Bi);          // insert will insert before pos, so we go back forward once.
-                    buckets.insert(Bi, SingleBucket(i, list<BucketElement>()));
+                    buckets.insert(Bi, SingleBucket(new_i, list<BucketElement>()));
                     Bi = prev(Bi);          // Bi is the bucket we just inserted
-                    i_top = i;
+                    i_fast = new_i;
                 }
             }
         }
-
     }
 }
 

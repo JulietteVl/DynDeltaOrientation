@@ -36,7 +36,7 @@ protected:
 
     // Bi used for insertion / deletion during a recursion. This is an iterator.
     _List_iterator<SingleBucket> Bi;
-    unsigned int i_top;                 // index of Bi
+    unsigned int i_fast;                 // index of Bi
     
 public:
     DeltaOrientationsConfig config;
