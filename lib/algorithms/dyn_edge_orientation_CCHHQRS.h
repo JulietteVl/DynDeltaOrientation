@@ -18,6 +18,20 @@ class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
                 void handleDeletion(NodeID source, NodeID target) override;
                 void end() override {
                         for( unsigned i = 0; i < GOrientation->number_of_nodes(); i++) {
+                                for (auto p:G_b[i]){
+                                        // "complete" edges
+                                        for (int j = 0; j < p.second / config.b; j++){
+                                                m_adj[i].push_back(p.first);
+                                        }
+                                        // "partial" edges
+                                        // if there is a half edge, we break ties arbitrarily
+                                        if (2 * (p.second % config.b) == config.b){
+                                                if (i > p.first){ m_adj[i].push_back(p.first); }
+                                        }
+                                        else if (p.second % config.b > config.b / 2){ m_adj[i].push_back(p.first); }
+                                }
+                        }
+                        for( unsigned i = 0; i < GOrientation->number_of_nodes(); i++) {
                                 for( unsigned j = 0; j < m_adj[i].size(); j++) {
                                         GOrientation->new_edge(i, m_adj[i][j]);
                                 }

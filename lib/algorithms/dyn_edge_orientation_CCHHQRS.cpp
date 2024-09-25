@@ -17,7 +17,7 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(const std::shared_ptr
 
 void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source, NodeID target){
         for (unsigned i = 0; i < config.b; i++){
-                if (m_adj[source].size() < m_adj[target].size()){
+                if (dp[source] < dp[target]){
                         insert_directed(source, target);
                 }
                 else{
