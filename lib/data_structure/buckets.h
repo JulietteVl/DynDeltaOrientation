@@ -47,7 +47,7 @@ public:
     void add(NodeID u, int du, out_neighbour_iterator uv_iterator);
     void remove_top();
     void remove(NodeID u, int j);
-    void update(NodeID u, int du_prev, int du);  // move u in a bucket given its out degree
+    void update(NodeID u, int du_prev, int du, out_neighbour_iterator uv_iterator);  // move u in a bucket given its out degree
     void update_Bi(int dv); // Check if Bi should be updated when the outdegree of the node change.
     // Getters
     out_neighbour_iterator get_from_max_bucket();

@@ -23,18 +23,22 @@ void Buckets::add(NodeID u, out_neighbour_iterator uv_iterator) const{
 
 void Buckets::add(NodeID u, int du, out_neighbour_iterator uv_iterator){
     int j = static_cast<int>(log(du)/log(1 + config.lambda));
-    for (auto B = buckets.begin(); B != buckets.end(); ++B){
+    for (auto B = buckets.begin(); B != buckets.end(); ++B){ // The right bucket already exists, we found it
         if (B->bucketID == j){
             B->bucket.push_back(BucketElement(u, uv_iterator));
             return;
         }
-        if (B->bucketID > j){
+        if (B->bucketID > j){ // we went too far
             list<BucketElement> Bj;
             Bj.push_back(BucketElement(u, uv_iterator));
             buckets.insert(B, SingleBucket(j, Bj));
             return;
         }
     }
+    // Otherwise, we need a bucket with a higher bucketID:
+    list<BucketElement> Bj;
+    Bj.push_back(BucketElement(u, uv_iterator));
+    buckets.push_back(SingleBucket(j, Bj));
 }
 
 
@@ -63,27 +67,14 @@ void Buckets::remove(NodeID u, int j){
 }
 
 
-void Buckets::update(NodeID u, int du_prev, int du){
+void Buckets::update(NodeID u, int du_prev, int du, out_neighbour_iterator uv_iterator){
     // check if the outdegree of u leads to a different bucket
     int j_prev = static_cast<int>(log(du_prev)/log(1 + config.lambda));
     int j      = static_cast<int>(log(du     )/log(1 + config.lambda));
     if (j_prev == j){return;}
-    // If it does, remove all the occurences of u in that bucket
-    // Find the previous bucket
-    auto is_bucket = [&j_prev](const SingleBucket &B) { return B.bucketID == j_prev; };
-    auto it = find_if(buckets.begin(), buckets.end(), is_bucket);
-    auto Bj = it->bucket;
-
-    // Remove u in outdated bucket
-    auto is_target = [&u](const BucketElement &w) { return w.node == u; };
-    auto it2 = find_if(Bj.begin(), Bj.end(), is_target);
-    auto uv_iterator = it2->out_iterator;   // Store the iterator in a variable
-    it->bucket.erase(it2);                // Erase the vertex from the bucket
-    add(u, du, uv_iterator);                // could be a little faster
-
-    if (it->bucket.empty() & it->bucketID != i_fast) {    // If the bucket is empty, and is not Bi
-        buckets.erase(it);                              // Remove it
-    }
+    // If it does, remove u in that bucket
+    remove(u, j_prev);
+    add(u, du, uv_iterator);
 }
 
 
@@ -95,9 +86,7 @@ void Buckets::update_Bi(int dv){
     int i_top = buckets.rbegin()->bucketID;
     if (new_i = i_fast){ return; }
 
-    if (new_i > i_top)
-    {
-        // TODO push back bucket at the end, it is Bi
+    if (new_i > i_top){
         buckets.push_back(SingleBucket(new_i, list<BucketElement>()));
         Bi = prev(buckets.end());
         i_fast = new_i;

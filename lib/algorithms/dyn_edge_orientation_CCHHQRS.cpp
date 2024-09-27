@@ -56,10 +56,11 @@ void dyn_edge_orientation_CCHHQRS::insert_directed(NodeID u, NodeID v){ // NOLIN
         }
         else{
                 N_in[u].update_Bi(dp[u]);
-                if (dp[u] <= 1){ return; }              // If there was no outneigbours, there is nothing to update
                 for (auto it = G_b[u].begin(); it != G_b[u].end(); ++it){ //  for all the outneighbours of u
                         NodeID w = it->first;
-                        N_in[w].update(u, dp[u] - 1, dp[u]);
+                        // if uv did not exist before, u will not be found in the in neighbours of v. We skip.
+                        if (w == v & it->second == 1) { continue; }
+                        N_in[w].update(u, dp[u] - 1, dp[u], it);
                 }
         }
 }
@@ -76,7 +77,7 @@ void dyn_edge_orientation_CCHHQRS::delete_directed(NodeID u, NodeID v){ // NOLIN
                 N_in[u].update_Bi(dp[u]);
                 for (auto it = G_b[u].begin(); it != G_b[u].end(); ++it){
                         NodeID w = it->first;
-                        N_in[w].update(u, dp[u] + 1, dp[u]);
+                        N_in[w].update(u, dp[u] + 1, dp[u], it);
                 }
         }
 }
@@ -93,7 +94,7 @@ void dyn_edge_orientation_CCHHQRS::delete_directed_fast(NodeID u, NodeID v, out_
                 N_in[u].update_Bi(dp[u]);
                 for (auto it = G_b[u].begin(); it != G_b[u].end(); ++it){
                         NodeID w = it->first;
-                        N_in[w].update(u, dp[u] + 1, dp[u]);
+                        N_in[w].update(u, dp[u] + 1, dp[u], it);
                 }
         }
 }

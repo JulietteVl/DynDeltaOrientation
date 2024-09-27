@@ -14,7 +14,7 @@ void run_dynamic_algorithm(std::shared_ptr<dyn_graph_access> & G,
                            std::vector<std::pair<int, std::pair<NodeID, NodeID> > > &edge_sequence, 
                            std::shared_ptr<dyn_edge_orientation> algorithm ) {
 
-        for (size_t i = 0; i < edge_sequence.size(); ++i) { 
+        for (size_t i = 0; i < edge_sequence.size(); ++i) {
                 std::pair<NodeID, NodeID> & edge = edge_sequence[i].second;
 
                 if (edge_sequence.at(i).first) {
