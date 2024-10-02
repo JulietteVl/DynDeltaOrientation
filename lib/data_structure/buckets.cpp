@@ -7,7 +7,7 @@ Buckets::Buckets()
 
 Buckets::Buckets(const DeltaOrientationsConfig& config){
     this->config = config;
-    i_fast = static_cast<int>(log(config.b / 4)/log(1 + config.lambda)); // d = 0
+    i_fast = get_Bi_id(0); // d = 0
     buckets.push_back(SingleBucket(i_fast, list<BucketElement>()));
     Bi = buckets.end();
     Bi = prev(Bi);
@@ -16,13 +16,20 @@ Buckets::Buckets(const DeltaOrientationsConfig& config){
 
 Buckets::~Buckets()= default;
 
+int Buckets::get_bucket_id(const int du) const {return static_cast<int>(log(du)/log(1 + config.lambda));}
+
+int Buckets::get_Bi_id(const int du) const {
+    return static_cast<int> (log(max(
+            (1 + config.lambda) * du, config.b / 4
+            ))/log(1 + config.lambda));
+}
 
 void Buckets::add(NodeID u, out_neighbour_iterator uv_iterator) const{
     Bi->bucket.push_back(BucketElement(u, uv_iterator));
 }
 
 void Buckets::add(NodeID u, int du, out_neighbour_iterator uv_iterator){
-    int j = static_cast<int>(log(du)/log(1 + config.lambda));
+    int j = get_bucket_id(du);
     for (auto B = buckets.begin(); B != buckets.end(); ++B){ // The right bucket already exists, we found it
         if (B->bucketID == j){
             B->bucket.push_back(BucketElement(u, uv_iterator));
@@ -49,7 +56,8 @@ void Buckets::remove_top(){
 }
 
 // Should only be called if multiplicity is 0
-void Buckets::remove(NodeID u, int j){
+void Buckets::remove(NodeID u, int du){
+    int j = get_bucket_id(du);
     // Find the bucket
     auto is_bucket = [&j](const SingleBucket &B) { return B.bucketID == j; };
     auto it = find_if(buckets.begin(), buckets.end(), is_bucket);
@@ -69,22 +77,20 @@ void Buckets::remove(NodeID u, int j){
 
 void Buckets::update(NodeID u, int du_prev, int du, out_neighbour_iterator uv_iterator){
     // check if the outdegree of u leads to a different bucket
-    int j_prev = static_cast<int>(log(du_prev)/log(1 + config.lambda));
-    int j      = static_cast<int>(log(du     )/log(1 + config.lambda));
+    int j_prev = get_bucket_id(du_prev);
+    int j      = get_bucket_id(du);
     if (j_prev == j){return;}
     // If it does, remove u in that bucket
-    remove(u, j_prev);
+    remove(u, du_prev);
     add(u, du, uv_iterator);
 }
 
 
-void Buckets::update_Bi(int dv){
+void Buckets::update_Bi(int du){
     // This is the value that i_fast should have by the end of the function
-    int new_i = static_cast<int> (log(max(
-        (1 + config.lambda) * dv, config.b / 4
-    ))/log(1 + config.lambda));
+    int new_i = get_Bi_id(du);
     int i_top = buckets.rbegin()->bucketID;
-    if (new_i = i_fast){ return; }
+    if (new_i == i_fast){ return; }
 
     if (new_i > i_top){
         buckets.push_back(SingleBucket(new_i, list<BucketElement>()));
@@ -128,6 +134,6 @@ void Buckets::update_Bi(int dv){
 }
 
 
-list<pair<NodeID, int>>::iterator Buckets::get_from_max_bucket(){
+list<pair<NodeID, int>>::iterator Buckets::get_from_max_bucket() const{
     return buckets.rbegin()->bucket.begin()->out_iterator;
 }

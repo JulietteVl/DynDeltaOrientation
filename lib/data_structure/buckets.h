@@ -43,14 +43,16 @@ public:
     Buckets();
     explicit Buckets(const DeltaOrientationsConfig& config);
     ~Buckets();
+    int get_bucket_id(int du) const;
+    int get_Bi_id(int du) const;
     void add(NodeID u, out_neighbour_iterator uv_iterator) const;
     void add(NodeID u, int du, out_neighbour_iterator uv_iterator);
     void remove_top();
-    void remove(NodeID u, int j);
+    void remove(NodeID u, int du);
     void update(NodeID u, int du_prev, int du, out_neighbour_iterator uv_iterator);  // move u in a bucket given its out degree
-    void update_Bi(int dv); // Check if Bi should be updated when the outdegree of the node change.
+    void update_Bi(int du); // Check if Bi should be updated when the outdegree of the node change.
     // Getters
-    out_neighbour_iterator get_from_max_bucket();
+    out_neighbour_iterator get_from_max_bucket() const;
 };
 
 #endif // BUCKETS_H
