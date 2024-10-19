@@ -7,52 +7,57 @@
 
 using namespace std;    // for my sanity. and readability.
 
-typedef list<pair<NodeID, int>>::iterator out_neighbour_iterator; // point to v + multiplicity in G_b[u]
-//typedef list<pair<NodeID, out_neighbour_iterator>> bucket;
-
-struct BucketElement{
-    // Instead of having duplicates, we refer to the multiplicity in Gb, accessible through the iterator.
-    NodeID node;
-    list<pair<NodeID, int>>::iterator out_iterator;
-    BucketElement(){}
-    BucketElement(NodeID n, out_neighbour_iterator it){node = n; out_iterator = it;}
-    ~BucketElement(){}
-};
-
-struct SingleBucket{
-    unsigned int bucketID;
-    list<BucketElement> bucket;
-    SingleBucket(){}
-    SingleBucket(unsigned int bucket_ID, const list<BucketElement> &B){bucketID = bucket_ID; bucket = B;}
-    ~SingleBucket(){}
-};
+struct DEdge;
+struct Vertex;
+struct SingleBucket;
 
 class Buckets{
-protected:
+public:
     // contains j, Bj for different j. External list in sorted order, internal list Bj in arbitrary order.
     // Bj contains in neighbours w s.t. j = log(d+(w))
-    list<SingleBucket> buckets;
-    // Each element of Bj, representing u as an in-neighbour of v, contains u and a pointer to the position of v and the multiplicity of uv in G_b[u]
-
-    // Bi used for insertion / deletion during a recursion. This is an iterator.
-    _List_iterator<SingleBucket> Bi;
-    unsigned int i_fast;                 // index of Bi
+    vector<SingleBucket> buckets;
+    int max_bucketID = -1; // needed in delete
     
 public:
     DeltaOrientationsConfig config;
     Buckets();
-    explicit Buckets(const DeltaOrientationsConfig& config);
+    explicit Buckets(const DeltaOrientationsConfig& config, int n);
     ~Buckets();
     int get_bucket_id(int du) const;
-    int get_Bi_id(int du) const;
-    void add(NodeID u, out_neighbour_iterator uv_iterator) const;
-    void add(NodeID u, int du, out_neighbour_iterator uv_iterator);
-    void remove_top();
-    void remove(NodeID u, int du);
-    void update(NodeID u, int du_prev, int du, out_neighbour_iterator uv_iterator);  // move u in a bucket given its out degree
-    void update_Bi(int du); // Check if Bi should be updated when the outdegree of the node change.
-    // Getters
-    out_neighbour_iterator get_from_max_bucket() const;
+    void update(DEdge *uv);
+    void add(DEdge *uv);
+    void add_fast(DEdge* uv);
+    void remove(DEdge * uv);
+};
+
+struct DEdge{
+    DEdge* mirror;  // vu
+    Vertex *source;
+    Vertex *target;
+    int count = 0;
+    SingleBucket *bucket;              // location of the edge
+    list<DEdge*>::iterator location_in_neighbours;
+    list<DEdge*>::iterator location_out_neighbours;    // location of edge in the out neighbour list of source
+    DEdge(Vertex *u, Vertex *v){source = u, target = v;};
+};
+
+struct Vertex{
+    NodeID node;
+    list<DEdge*> out_edges = list<DEdge*>();
+    Buckets in_edges;
+    DEdge *self_loop;
+    unsigned int out_degree = 0;                // out degree
+};
+
+struct SingleBucket{
+    int bucketID = -1;
+    list<DEdge*> bucket_elements = list<DEdge*>();
+    int prev = -1;
+    int next = -1;
+
+    SingleBucket(){}
+    SingleBucket(unsigned int bucket_ID){bucketID = bucket_ID;}
+    ~SingleBucket(){}
 };
 
 #endif // BUCKETS_H

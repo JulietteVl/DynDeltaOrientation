@@ -18,17 +18,17 @@ class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
                 void handleDeletion(NodeID source, NodeID target) override;
                 void end() override {
                         for( unsigned i = 0; i < GOrientation->number_of_nodes(); i++) {
-                                for (auto p:G_b[i]){
+                                for (DEdge* uv: vertices[i].out_edges){
                                         // "complete" edges
-                                        for (int j = 0; j < p.second / config.b; j++){
-                                                m_adj[i].push_back(p.first);
+                                        for (int j = 0; j < uv->count / config.b; j++){
+                                                m_adj[i].push_back(uv->target->node);
                                         }
                                         // "partial" edges
                                         // if there is a half edge, we break ties arbitrarily
-                                        if (2 * (p.second % config.b) == config.b){
-                                                if (i > p.first){ m_adj[i].push_back(p.first); }
+                                        if (2 * (uv->count % config.b) == config.b){
+                                                if (i > uv->target->node){ m_adj[i].push_back(uv->target->node); }
                                         }
-                                        else if (p.second % config.b > config.b / 2){ m_adj[i].push_back(p.first); }
+                                        else if (uv->count % config.b > config.b / 2){ m_adj[i].push_back(uv->target->node); }
                                 }
                         }
                         for( unsigned i = 0; i < GOrientation->number_of_nodes(); i++) {
@@ -48,17 +48,14 @@ class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
                         return false;
                 }
         private:
-                vector< vector<NodeID> > m_adj;
-                vector<int> dp;                                 // out degrees
-                vector<list<pair<NodeID, int>>> G_b;            // out neighbours + multiplicity
-                vector<Buckets> N_in;                           // in neighbours
-                void insert_directed(NodeID u, NodeID v);
-                void delete_directed(NodeID u, NodeID v);
-                void delete_directed_fast(NodeID u, NodeID v, list<pair<NodeID, int>>::iterator uv_iterator);
-                void add(NodeID u, NodeID v);
-                void add_fast(NodeID u, NodeID v, list<pair<NodeID, int>>::iterator uv_iterator);
-                void remove(NodeID u, NodeID v);
-                void remove_fast(NodeID u, NodeID v, list<pair<NodeID, int>>::iterator uv_iterator);
+                vector< vector<NodeID> > m_adj;                 // For post processing only
+                map<pair<int, int>, DEdge> edges;
+                vector<Vertex> vertices;
+                void insert_directed(DEdge *uv);
+                void delete_directed(DEdge *uv);
+                void add(DEdge *uv);
+                void add_fast(DEdge *uv, list<pair<NodeID, int>>::iterator uv_iterator);
+                void remove(DEdge *uv);
                 list<pair<NodeID, int>>::iterator argmin_out(NodeID source);
 };
 

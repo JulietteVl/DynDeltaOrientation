@@ -1,139 +1,119 @@
 #include "buckets.h"
 
 Buckets::Buckets()
-{
-    i_fast = 0; // Will be updated
-}
+{}
 
-Buckets::Buckets(const DeltaOrientationsConfig& config){
+Buckets::Buckets(const DeltaOrientationsConfig& config, int n){
     this->config = config;
-    i_fast = get_Bi_id(0); // d = 0
-    buckets.push_back(SingleBucket(i_fast, list<BucketElement>()));
-    Bi = buckets.end();
-    Bi = prev(Bi);
+    buckets.resize(get_bucket_id(config.b * n) + 2);
 }
-
 
 Buckets::~Buckets()= default;
 
 int Buckets::get_bucket_id(const int du) const {return static_cast<int>(log(du)/log(1 + config.lambda));}
 
-int Buckets::get_Bi_id(const int du) const {
-    return static_cast<int> (log(max(
-            (1 + config.lambda) * du, config.b / 4
-            ))/log(1 + config.lambda));
-}
+void Buckets::add(DEdge* uv){
+    int j = get_bucket_id(uv->source->out_degree);
 
-void Buckets::add(NodeID u, out_neighbour_iterator uv_iterator) const{
-    Bi->bucket.push_back(BucketElement(u, uv_iterator));
-}
+    buckets[j].bucket_elements.push_back(uv);
+    uv->location_in_neighbours = prev(buckets[j].bucket_elements.end());
+    uv->bucket = &buckets[j];
 
-void Buckets::add(NodeID u, int du, out_neighbour_iterator uv_iterator){
-    int j = get_bucket_id(du);
-    for (auto B = buckets.begin(); B != buckets.end(); ++B){ // The right bucket already exists, we found it
-        if (B->bucketID == j){
-            B->bucket.push_back(BucketElement(u, uv_iterator));
-            return;
-        }
-        if (B->bucketID > j){ // we went too far
-            list<BucketElement> Bj;
-            Bj.push_back(BucketElement(u, uv_iterator));
-            buckets.insert(B, SingleBucket(j, Bj));
-            return;
-        }
+    // The bucket already exists (prev and next are up to date)
+    if (buckets[j].bucketID == j){ return; }
+
+    // The bucket was unused - prev and next have to be set
+    buckets[j].bucketID = j;
+
+    // Check if j is the new max bucket
+    if (max_bucketID == -1) { max_bucketID = j; }
+    else if (j > max_bucketID) {
+        buckets[max_bucketID].next = j;
+        buckets[j].prev = max_bucketID;
+        max_bucketID = j;
     }
-    // Otherwise, we need a bucket with a higher bucketID:
-    list<BucketElement> Bj;
-    Bj.push_back(BucketElement(u, uv_iterator));
-    buckets.push_back(SingleBucket(j, Bj));
-}
-
-
-// Remove the element that we would get_from_max_bucket()
-// Should only be called if multiplicity is 0
-void Buckets::remove_top(){
-    buckets.rbegin()->bucket.pop_front();
-}
-
-// Should only be called if multiplicity is 0
-void Buckets::remove(NodeID u, int du){
-    int j = get_bucket_id(du);
-    // Find the bucket
-    auto is_bucket = [&j](const SingleBucket &B) { return B.bucketID == j; };
-    auto it = find_if(buckets.begin(), buckets.end(), is_bucket);
-    auto Bj = it->bucket;
-
-    // Find the vertex in the bucket
-    auto is_target = [&u](const BucketElement &w) { return w.node == u; };
-    auto it2 = find_if(Bj.begin(), Bj.end(), is_target);
-
-    it->bucket.erase(it2);                // Erase the vertex from the bucket
-
-    if (it->bucket.empty() and it->bucketID != i_fast) {  // If the bucket is empty,
-        buckets.erase(it);                // Remove it
+    // Or insert
+    else{
+        int j_self = uv->target->self_loop->bucket->bucketID;
+        int pos = max_bucketID;
+        int pos2 = -1;
+        if (j <= j_self){ pos = j_self; pos2 = buckets[j_self].next; } // the position will be very close to j in the cases where the insertion has to be fast
+        while(pos > j){
+            pos2 = pos;
+            pos = buckets[pos].prev;
+        }
+        if (pos > -1){ // j is not the lowest bucket
+            buckets[pos].next = j;
+        }
+        buckets[j].prev = pos;
+        buckets[j].next = pos2;
+        buckets[pos2].prev = j;
     }
 }
 
+// update the element after incrementing the out degree of the source
+void Buckets::update(DEdge *uv){
+    int j = get_bucket_id(uv->source->out_degree);
+    int j_prev = uv->bucket->bucketID;
+    if (j == j_prev){ return; }
 
-void Buckets::update(NodeID u, int du_prev, int du, out_neighbour_iterator uv_iterator){
-    // check if the outdegree of u leads to a different bucket
-    int j_prev = get_bucket_id(du_prev);
-    int j      = get_bucket_id(du);
-    if (j_prev == j){return;}
-    // If it does, remove u in that bucket
-    remove(u, du_prev);
-    add(u, du, uv_iterator);
-}
-
-
-void Buckets::update_Bi(int du){
-    // This is the value that i_fast should have by the end of the function
-    int new_i = get_Bi_id(du);
-    int i_top = buckets.rbegin()->bucketID;
-    if (new_i == i_fast){ return; }
-
-    if (new_i > i_top){
-        buckets.push_back(SingleBucket(new_i, list<BucketElement>()));
-        Bi = prev(buckets.end());
-        i_fast = new_i;
-        return;
+    if (j > max_bucketID){
+        max_bucketID = j;
     }
-    if (new_i > i_fast){
-        while(i_fast < new_i & i_fast < i_top){
-            Bi = next(Bi);           // Find the successor of new_i
-            i_fast = Bi->bucketID;
-        }
-    // No bucket that has index exactly new_i? Make one
-        if (i_fast > new_i){ // We went too far
-            buckets.insert(Bi, SingleBucket(new_i, list<BucketElement>()));
-            Bi = prev(Bi);
-            i_fast = new_i;
-            return;
-        }
-    }
-    if (new_i < i_fast){
-        while(new_i < i_fast){              // Find predecessor of new_i
-            if (Bi == buckets.begin()){     // Cannot use prev on begin(), just solve right away.
-                buckets.insert(Bi, SingleBucket(new_i, list<BucketElement>()));
-                Bi = prev(Bi);              // Bi is the bucket we just inserted
-                i_fast = new_i;
+
+    if (buckets[j].bucketID == -1) {   // bucket j does not exist yet. We will first insert it and then update the edges, possibly removing j_prev.
+        if (j == j_prev - 1){
+            int p = buckets[j_prev].prev;
+            if (p != -1){   // j_prev was not the lowest bucket
+                buckets[p].next = j;
             }
-            else{
-                Bi = prev(Bi);
-                i_fast = Bi->bucketID;
-                // No bucket that has index exactly Bi? Make one
-                if (i_fast < new_i){             // We went too far backward
-                    Bi = next(Bi);          // insert will insert before pos, so we go back forward once.
-                    buckets.insert(Bi, SingleBucket(new_i, list<BucketElement>()));
-                    Bi = prev(Bi);          // Bi is the bucket we just inserted
-                    i_fast = new_i;
-                }
+            buckets[j].prev = p;
+            buckets[j_prev].prev = j;
+            buckets[j].next = j_prev;
+        }
+        else if (j = j_prev + 1){
+            int n = buckets[j_prev].next;
+            if (n != -1){   // j_prev was not the highest bucket
+                buckets[n].prev = j;
             }
+            buckets[j].next = n;
+            buckets[j_prev].next = j;
+            buckets[j].prev = j_prev;
+        }
+        else{
+            cerr << "update leads to a non consecutive bucket";
         }
     }
+
+    remove(uv);
+
+    buckets[j].bucketID = j;
+    buckets[j].bucket_elements.push_back(uv);
+    uv->location_in_neighbours = prev(buckets[j].bucket_elements.end());
+    uv->bucket = &buckets[j];
 }
 
+void Buckets::remove(DEdge *uv){
+    uv->bucket->bucket_elements.erase(uv->location_in_neighbours);
+    uv->location_in_neighbours = uv->bucket->bucket_elements.end();
 
-list<pair<NodeID, int>>::iterator Buckets::get_from_max_bucket() const{
-    return buckets.rbegin()->bucket.begin()->out_iterator;
+    int j = uv->bucket->bucketID;
+
+    if (uv->bucket->bucket_elements.empty()){
+        int p = buckets[j].prev;
+        int n = buckets[j].next;
+        if (n != -1){ // j is not max bucket
+            buckets[n].prev = buckets[j].prev;
+        }
+        if (p != -1){ // j is not lowest bucket
+            buckets[p].next = buckets[j].next;
+        }
+        if (j == max_bucketID) {    // because of the self loop, there is always a bucket
+            max_bucketID = buckets[max_bucketID].prev;
+        }
+
+        buckets[j].bucketID = -1;
+        buckets[j].next = -1;
+        buckets[j].prev = -1;
+    }
 }

@@ -7,157 +7,122 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(const std::shared_ptr
                                                            DeltaOrientationsResult& result)
     : dyn_edge_orientation(GOrientation, config, result) {
         m_adj.resize(GOrientation->number_of_nodes());
-        dp.resize(GOrientation->number_of_nodes());
-        G_b.resize(GOrientation->number_of_nodes());
-        N_in.resize(GOrientation->number_of_nodes());
+        vertices.resize(GOrientation->number_of_nodes());
         for (int i = 0; i < GOrientation->number_of_nodes(); i++){
-                N_in[i] = Buckets(config);
+                vertices[i].node = i;
+                vertices[i].in_edges = Buckets(config, GOrientation->number_of_nodes());
+                DEdge uu(&vertices[i], &vertices[i]);
+                uu.mirror = NULL;
+                edges.insert(make_pair(make_pair(i, i), uu));
+                DEdge* new_uu = &edges.at(make_pair(i, i));
+                vertices[i].self_loop = new_uu;
+                add(new_uu);
         }
 }
 
 void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source, NodeID target){
+        if (source == target){ return; }
+        Vertex *u = &vertices[source];
+        Vertex *v = &vertices[target];
+        // ignore existing edges (simple graphs only)
+        if (edges.count(make_pair(source, target)) == 1){return;}
+        if (edges.count(make_pair(target, source)) == 1){return;}
+        // make the edges
+        DEdge uv(u, v);
+        DEdge vu(v, u);
+
+        edges.insert(make_pair(make_pair(source, target), uv));
+        edges.insert(make_pair(make_pair(target, source), vu));
+        DEdge * new_uv = &edges.at(make_pair(source, target));
+        DEdge * new_vu = &edges.at(make_pair(target, source));
+        new_uv->mirror = new_vu;
+        new_vu->mirror = new_uv;
+
+
+
         for (unsigned i = 0; i < config.b; i++){
-                if (dp[source] < dp[target]){
-                        insert_directed(source, target);
+                if (u->out_degree <= v->out_degree){
+                        insert_directed(new_uv);
                 }
                 else{
-                        insert_directed(target, source);
+                        insert_directed(new_vu);
                 }
         }
 }
 
 void dyn_edge_orientation_CCHHQRS::handleDeletion(NodeID source, NodeID target){
-        // Find where is the target in the out neighbours of u.
-        auto first = G_b[source].begin();
-        auto last = G_b[source].end();
-        auto is_target = [&target](const pair<NodeID, int> &v){return v.first == target;};
-        // For each copy we made of the edge
-        for (unsigned int i = 0; i < config.b; i++){
-                // is there an edge uv?
-                auto it = std::find_if(first, last, is_target);
-                // delete uv if available, else vu
-                if (first != last){
-                        delete_directed(source, target);
-                        first = next(it);       // If we find the element, we will delete it and search starting from the next element next time.
+        if (source == target){ return; }
+        Vertex u = vertices[source];
+        Vertex v = vertices[target];
+        DEdge* uv = &edges.at(make_pair(source, target));
+        DEdge* vu = &edges.at(make_pair(target, source));
+        while (uv->count + vu->count > 0){
+                if (uv->count >= vu->count){
+                        delete_directed(uv);
                 }
-                else{
-                        delete_directed(target, source);
-                }
+                else { delete_directed(vu); }
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::insert_directed(NodeID u, NodeID v){ // NOLINT(*-no-recursion)
-        add(u, v);
-        auto ux_iterator = argmin_out(u);
-        NodeID x = ux_iterator->first;
-        if (dp[u] > std::max(config.b / 4, (1 + config.lambda) * dp[x] + config.theta)){
-                remove_fast(u, x, ux_iterator); // Quick deletion
-                insert_directed(x, u);
+void dyn_edge_orientation_CCHHQRS::insert_directed(DEdge *uv){ // NOLINT(*-no-recursion)
+        add(uv);
+        DEdge *uw_min = uv->source->out_edges.back();
+
+        // find the out neighbour of minimum out degree
+        for (DEdge* uw: uv->source->out_edges){
+                // check threshod + ignore the self loop
+                if (uw->target->out_degree < uw_min->target->out_degree && uw->target->node != uv->source->node){
+                        uw_min = uw;
+                }
+        }
+
+        if (uv->source->out_degree > std::max(config.b / 4, (1 + config.lambda) * uw_min->target->out_degree + config.theta)){
+                remove(uw_min);
+                insert_directed(uw_min->mirror);
         }
         else{
-                N_in[u].update_Bi(dp[u]);
-                for (auto it = G_b[u].begin(); it != G_b[u].end(); ++it){ //  for all the outneighbours of u
-                        NodeID w = it->first;
-                        // if uv did not exist before, u will not be found in the in neighbours of v. We skip.
-                        if (w == v & it->second == 1) { continue; }
-                        N_in[w].update(u, dp[u] - 1, dp[u], it);
+                for(DEdge* uw: uv->source->out_edges){
+                        uw->target->in_edges.update(uw);
                 }
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::delete_directed(NodeID u, NodeID v){ // NOLINT(*-no-recursion)
-        remove(u, v);                           // Search bucket
-        auto ux_iterator = N_in[u].get_from_max_bucket();  // buckets.rbegin()->second.front()
-        NodeID x = ux_iterator->first;
-        if (dp[x] > std::max(config.b / 4, (1 + config.lambda) * dp[u] + config.theta)){
-                add_fast(u, x, ux_iterator);                 // Quick insertion
-                delete_directed(x, u);
+void dyn_edge_orientation_CCHHQRS::delete_directed(DEdge *uv){ // NOLINT(*-no-recursion)
+        remove(uv);
+        DEdge * ux = uv->source->in_edges.buckets[uv->source->in_edges.max_bucketID].bucket_elements.front();
+        if (ux->target->out_degree > max(config.b / 4, (1 + config.lambda) * ux->source->out_degree + config.theta)){
+                add(ux);
+                delete_directed(ux->mirror);
         }
-        else {
-                N_in[u].update_Bi(dp[u]);
-                for (auto it = G_b[u].begin(); it != G_b[u].end(); ++it){
-                        NodeID w = it->first;
-                        N_in[w].update(u, dp[u] + 1, dp[u], it);
+        else{
+                for(DEdge* uw: uv->source->out_edges){
+                        uw->target->in_edges.update(uw);
                 }
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::delete_directed_fast(NodeID u, NodeID v, out_neighbour_iterator uv_iterator){
-        remove_fast(u, v, uv_iterator);
-        auto ux_iterator = N_in[u].get_from_max_bucket();
-        NodeID x = ux_iterator->first;
-        if (dp[x] > std::max(config.b / 4, (1 + config.lambda) * dp[u] + config.theta)){
-                add_fast(u, x, ux_iterator);                 // Quick insertion
-                delete_directed(x, u);
-        }
-        else {
-                N_in[u].update_Bi(dp[u]);
-                for (auto it = G_b[u].begin(); it != G_b[u].end(); ++it){
-                        NodeID w = it->first;
-                        N_in[w].update(u, dp[u] + 1, dp[u], it);
-                }
+void dyn_edge_orientation_CCHHQRS::add(DEdge *uv){
+        uv->source->out_degree++;
+        uv->count++;
+        if (uv->count == 1) {    // new edge
+                uv->source->out_edges.push_back(uv);
+                uv->location_out_neighbours = prev(uv->source->out_edges.end());
+                // insert u in the in neighbours of v
+                uv->target->in_edges.add(uv);
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::add(NodeID u, NodeID v){
-        dp[u]++;
-        auto is_target = [&v](const pair<NodeID, int> &w){return w.first == v;};
-        auto it = std::find_if(G_b[u].begin(), G_b[u].end(), is_target);
-        if (it !=G_b[u].end()){
-                it->second++;
-        }
-        else {
-                G_b[u].push_back(std::make_pair(v, 1));
-                auto uv_iterator = std::prev(G_b[u].end());
-                N_in[v].add(u, dp[u], uv_iterator);
-        }
-}
-
-void dyn_edge_orientation_CCHHQRS::add_fast(NodeID u, NodeID v, std::list<std::pair<NodeID, int>>::iterator uv_iterator){
-        dp[u]++;
-        if (uv_iterator->second > 0){
-                uv_iterator->second++;
-        }
-        else {
-                G_b[u].push_back(std::make_pair(v, 1));
-                uv_iterator = std::prev(G_b[u].end());
-                N_in[v].add(u, dp[u], uv_iterator);
-        }
-}
-
-void dyn_edge_orientation_CCHHQRS::remove(NodeID u, NodeID v){
-        // Find v in the out neighbours of u
-        auto is_target = [&v](const pair<NodeID, int> &w){return w.first == v;};
-        auto it = std::find_if(G_b[u].begin(), G_b[u].end(), is_target);
-        // decrement the multiplicity
-        it->second--;
+void dyn_edge_orientation_CCHHQRS::remove(DEdge *uv){
+        // decrement the multiplicity of the edge
+        uv->count--;
         // if the new multiplicity is 0, remove the element.
-        if (it->second <= 0){
-                N_in[v].remove(u, dp[u]);
-                G_b[u].erase(it);
+        if (uv->count == 0){
+                uv->source->out_edges.erase(uv->location_out_neighbours);
+                uv->location_out_neighbours = uv->source->out_edges.end();
+                uv->target->in_edges.remove(uv);
         }
-        dp[u]--;
-}
-
-void dyn_edge_orientation_CCHHQRS::remove_fast(NodeID u, NodeID v, std::list<std::pair<NodeID, int>>::iterator uv_iterator){
-        uv_iterator->second--;
-        if (uv_iterator->second <= 0){
-                G_b[u].erase(uv_iterator);
-                N_in[v].remove_top(); // quick deletion
+        if (uv->count < 0){
+                cerr << "Error: edge count below 0" << endl;
         }
-        dp[u]--;
-}
-
-// return the out neighbour of lowest out degree
-out_neighbour_iterator dyn_edge_orientation_CCHHQRS::argmin_out(NodeID source){
-        auto it = G_b[source].begin();
-        int mini = dp[it->first];
-        auto it_mini = it;
-        for (it = G_b[source].begin(); it != G_b[source].end(); ++it){
-                if (dp[it->first] < mini){
-                        mini = dp[it->first];
-                        it_mini = it;
-                }
-        }
-        return it_mini;
+        uv->source->out_degree--;
 }
