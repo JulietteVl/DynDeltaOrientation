@@ -13,7 +13,7 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(
         m_adj.resize(GOrientation->number_of_nodes());
         vertices.resize(GOrientation->number_of_nodes());
         for (int i = 0; i < GOrientation->number_of_nodes(); i++) {
-                vertices[i].in_edges = Buckets(config, GOrientation->number_of_nodes());
+                vertices[i].in_edges = InHeap(config, GOrientation->number_of_nodes());
                 vertices[i].self_loop = new DEdge(i);
                 edge_allocator.push_back(vertices[i].self_loop);
                 vertices[i].self_loop->mirror = vertices[i].self_loop;
@@ -21,8 +21,7 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source,
-                                                   NodeID target) {
+void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source, NodeID target) {
         if (source == target) { return; }
 
         // make the edges
@@ -40,8 +39,7 @@ void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source,
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::handleDeletion(NodeID source,
-                                                  NodeID target) {
+void dyn_edge_orientation_CCHHQRS::handleDeletion(NodeID source, NodeID target) {
         if (source == target) { return; }
         DEdge* uv = NULL;
         DEdge* vu = NULL;
@@ -93,12 +91,9 @@ void dyn_edge_orientation_CCHHQRS::insert_directed(
         }
 }
 
-void dyn_edge_orientation_CCHHQRS::delete_directed(
-        DEdge* uv, NodeID u) { // NOLINT(*-no-recursion)
+void dyn_edge_orientation_CCHHQRS::delete_directed(DEdge* uv, NodeID u) { // NOLINT(*-no-recursion)
         remove(uv, u);
-        DEdge* ux = vertices[u]
-                    .in_edges.buckets[vertices[u].in_edges.max_bucketID]
-                    .bucket_elements.front();
+        DEdge* ux = vertices[u].in_edges.get_max();
         if (vertices[ux->target].out_degree > std::max(static_cast<float>(config.b),
                                                        (1 + config.lambda) * vertices[u].out_degree + config.theta)) {
                 add(ux, u);
@@ -136,8 +131,7 @@ void dyn_edge_orientation_CCHHQRS::remove(DEdge* uv, NodeID u) {
                 }
                 vertices[u].out_edges.resize(vertices[u].out_edges.size() - 1);
                 uv->location_out_neighbours = vertices[u].out_edges.size();
-                vertices[uv->target].in_edges.remove(
-                        uv, vertices[uv->target].in_edges.buckets[uv->bucket].bucket_elements);
+                vertices[uv->target].in_edges.remove(uv);
         }
         if (uv->count < 0) { std::cerr << "Error: edge count below 0" << std::endl; }
         vertices[u].out_degree--;

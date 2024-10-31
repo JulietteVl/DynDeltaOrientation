@@ -8,7 +8,7 @@
 #include "DeltaOrientationsConfig.h"
 #include "DeltaOrientationsResult.h"
 #include "DynEdgeOrientation.h"
-#include "buckets.h"
+#include "in_neighbours.h"
 #include "dyn_graph_access.h"
 
 class dyn_edge_orientation_CCHHQRS : public dyn_edge_orientation {
@@ -56,9 +56,7 @@ private:
         void insert_directed(DEdge* uv, NodeID u);
         void delete_directed(DEdge* uv, NodeID u);
         void add(DEdge* uv, NodeID u);
-        // void add_fast(DEdge *uv, list<pair<NodeID, int>>::iterator uv_iterator);
         void remove(DEdge* uv, NodeID v);
-        // list<pair<NodeID, int>>::iterator argmin_out(NodeID source);
 };
 
 #endif

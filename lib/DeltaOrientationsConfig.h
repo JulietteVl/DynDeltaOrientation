@@ -39,6 +39,7 @@ public:
         unsigned b = 10;
         float lambda = 0.1;
         unsigned theta = 0; // 0 or 1
+        bool use_bucket_DS = false;
 
         // Brodal & Fagerberg
         unsigned delta = 0; // maintain delta-orientation

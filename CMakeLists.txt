@@ -47,7 +47,8 @@ add_definitions(-fpermissive)
 
 SET(DELTA-ORIENTATIONS_CXX_FILES
         lib/data_structure/dyn_graph_access.cpp
-        lib/data_structure/buckets.cpp
+        lib/data_structure/in_buckets.cpp
+        lib/data_structure/in_heap.cpp
         lib/io/graph_io.cpp
         lib/tools/timer.cpp
         lib/tools/random_functions.cpp
@@ -61,7 +62,7 @@ SET(DELTA-ORIENTATIONS_CXX_FILES
         lib/algorithms/dyn_edge_orientation_MaxDecending.cpp
         lib/algorithms/ilp.cpp
         extern/argtable3-3.0.3/argtable3.c
-        )
+)
 
 set(LIBCONVERT_SOURCE_FILES
 ./lib/io/graph_io.cpp
@@ -88,7 +89,8 @@ add_compile_definitions(DELTAORI_IS_LOGGING=${DELTA_ORIENTATIONS_IS_LOGGING})
 if(ILP)
 set(GUROBI_CXX_LIBRARY "$ENV{GUROBI_HOME}/lib/libgurobi_g++5.2.a")
 add_definitions(-DUSEILP)
-add_executable(${DELTA-ORIENTATIONS} app/${DELTA-ORIENTATIONS}.cpp $<TARGET_OBJECTS:${DELTA-ORIENTATIONS_LIB}>)
+add_executable(${DELTA-ORIENTATIONS} app/${DELTA-ORIENTATIONS}.cpp $<TARGET_OBJECTS:${DELTA-ORIENTATIONS_LIB}>
+        lib/data_structure/in_heap.cpp)
 target_link_libraries(${DELTA-ORIENTATIONS} optimized ${GUROBI_CXX_LIBRARY})
 target_link_libraries(${DELTA-ORIENTATIONS} gurobi_g++5.2 gurobi91)
 set(CMAKE_EXE_LINKER_FLAGS "-L$ENV{GUROBI_HOME}/lib")
