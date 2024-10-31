@@ -96,7 +96,7 @@ void Buckets::update(DEdge* uv, int outdegree_u) {
                 else { std::cerr << "update leads to a non consecutive bucket"; }
         }
 
-        remove(uv, buckets[uv->bucket].bucket_elements);
+        remove(uv);
 
         buckets[j].bucketID = j;
         buckets[j].bucket_elements.push_back(uv);
@@ -104,20 +104,20 @@ void Buckets::update(DEdge* uv, int outdegree_u) {
         uv->bucket = j;
 }
 
-void Buckets::remove(DEdge* uv, std::vector<DEdge*>& uv_bucket_bucket_elements) {
-        if (uv_bucket_bucket_elements.size() > 1) {
-                std::swap(uv_bucket_bucket_elements[uv->location_in_neighbours],
-                          uv_bucket_bucket_elements[uv_bucket_bucket_elements.size() - 1]);
-                uv_bucket_bucket_elements[uv->location_in_neighbours]
+void Buckets::remove(DEdge* uv) {
+        if (buckets[uv->bucket].bucket_elements.size() > 1) {
+                std::swap(buckets[uv->bucket].bucket_elements[uv->location_in_neighbours],
+                          buckets[uv->bucket].bucket_elements[buckets[uv->bucket].bucket_elements.size() - 1]);
+                buckets[uv->bucket].bucket_elements[uv->location_in_neighbours]
                         ->location_in_neighbours = uv->location_in_neighbours;
         }
-        uv_bucket_bucket_elements.resize(uv_bucket_bucket_elements.size() - 1);
+        buckets[uv->bucket].bucket_elements.resize(buckets[uv->bucket].bucket_elements.size() - 1);
 
-        uv->location_in_neighbours = uv_bucket_bucket_elements.size();
+        uv->location_in_neighbours = buckets[uv->bucket].bucket_elements.size();
 
         int j = uv->bucket;
 
-        if (uv_bucket_bucket_elements.empty()) {
+        if (buckets[uv->bucket].bucket_elements.empty()) {
                 int p = buckets[j].prev;
                 int n = buckets[j].next;
                 if (n != -1) { // j is not max bucket
@@ -129,10 +129,14 @@ void Buckets::remove(DEdge* uv, std::vector<DEdge*>& uv_bucket_bucket_elements) 
                 if (j ==
                         max_bucketID) { // because of the self loop, there is always a bucket
                         max_bucketID = buckets[max_bucketID].prev;
-                }
+                        }
 
                 buckets[j].bucketID = -1;
                 buckets[j].next = -1;
                 buckets[j].prev = -1;
         }
+}
+
+DEdge* Buckets::get_max(){
+        return buckets[max_bucketID].bucket_elements.front();
 }

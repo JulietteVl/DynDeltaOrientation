@@ -17,17 +17,17 @@ public:
         // list Bj in arbitrary order. Bj contains in neighbours w s.t. j = log(d+(w))
         std::vector<SingleBucket> buckets;
         int max_bucketID = -1; // needed in delete
+        int b;
 
 public:
         Buckets();
         explicit Buckets(const DeltaOrientationsConfig& config, int n);
         ~Buckets();
         int get_bucket_id(int du) const;
-        int b;
-        void update(DEdge* uv, int outdegree_u);
         void add(DEdge* uv, int out_degree, int bucket_v);
-        void add_fast(DEdge* uv);
-        void remove(DEdge* uv, std::vector<DEdge*>&);
+        void remove(DEdge* uv);
+        void update(DEdge* uv, int outdegree_u);
+        DEdge* get_max();
 };
 
 struct DEdge {
