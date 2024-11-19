@@ -48,6 +48,7 @@ struct Vertex {
         Buckets in_edges;
         DEdge* self_loop;
         unsigned int out_degree = 0; // out degree
+        unsigned int robin = 0;
 };
 
 struct SingleBucket {

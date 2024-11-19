@@ -50,15 +50,16 @@ public:
         }
 
 private:
+        unsigned int robin_size = 0;
         std::vector<std::vector<NodeID>> m_adj; // For post processing only
         std::vector<DEdge*> edge_allocator; // TODO delete edges at the end
         std::vector<Vertex> vertices;
         void insert_directed(DEdge* uv, NodeID u);
         void delete_directed(DEdge* uv, NodeID u);
+        void insert_directed_worst_case(DEdge* uv, NodeID u);
+        void delete_directed_worst_case(DEdge* uv, NodeID u);
         void add(DEdge* uv, NodeID u);
-        // void add_fast(DEdge *uv, list<pair<NodeID, int>>::iterator uv_iterator);
-        void remove(DEdge* uv, NodeID v);
-        // list<pair<NodeID, int>>::iterator argmin_out(NodeID source);
+        void remove(DEdge* uv, NodeID u);
 };
 
 #endif
