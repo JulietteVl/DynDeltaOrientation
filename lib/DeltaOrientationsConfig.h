@@ -39,6 +39,8 @@ public:
         unsigned b = 10;
         float lambda = 0.1;
         unsigned theta = 0; // 0 or 1
+        float lambda_precomp = 1.0 / (log(1 + lambda));
+        int offset = static_cast<int>(log(std::max(1.0f, static_cast<float>(4 * b))) * lambda_precomp);
 
         // Brodal & Fagerberg
         unsigned delta = 0; // maintain delta-orientation

@@ -18,6 +18,8 @@ public:
         std::vector<SingleBucket> buckets;
         int max_bucketID = -1; // needed in delete
         int b;
+        float lambda_precomp;
+        int offset;
 
 public:
         Buckets();
@@ -48,6 +50,7 @@ struct Vertex {
         Buckets in_edges;
         DEdge* self_loop;
         unsigned int out_degree = 0; // out degree
+        unsigned int robin = 0;
 };
 
 struct SingleBucket {
