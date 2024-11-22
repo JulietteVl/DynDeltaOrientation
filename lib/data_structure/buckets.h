@@ -18,6 +18,8 @@ public:
         std::vector<SingleBucket> buckets;
         int max_bucketID = -1; // needed in delete
         int b;
+        float lambda_precomp;
+        int offset;
 
 public:
         Buckets();

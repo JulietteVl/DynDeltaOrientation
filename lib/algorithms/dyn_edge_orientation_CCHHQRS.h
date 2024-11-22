@@ -35,6 +35,7 @@ public:
                 for (unsigned i = 0; i < GOrientation->number_of_nodes(); i++) {
                         for (unsigned j = 0; j < m_adj[i].size(); j++) { GOrientation->new_edge(i, m_adj[i][j]); }
                 }
+                for (DEdge* p: edge_allocator) { delete p; }
         };
 
         bool adjacent(NodeID source, NodeID target) override {

@@ -116,8 +116,9 @@ void dyn_edge_orientation_CCHHQRS::insert_directed_worst_case(DEdge* uv, NodeID 
         int t_max = 0;
         int old_robin = vertices[u].robin;
         // Round robin
-        for (int t = 0; t < std::min(robin_size, vertices[u].out_degree); t++) {
-                if (vertices[u].robin >= vertices[u].out_edges.size()){ vertices[u].robin = 0; }
+        unsigned int out_edges_size = vertices[u].out_edges.size();
+        for (int t = 0; t < std::min(robin_size, out_edges_size); t++) {
+                if (vertices[u].robin >= out_edges_size){ vertices[u].robin = 0; }
                 DEdge* uw = vertices[u].out_edges[vertices[u].robin];
                 // Find
                 if (vertices[u].out_degree > std::max(
@@ -136,7 +137,7 @@ void dyn_edge_orientation_CCHHQRS::insert_directed_worst_case(DEdge* uv, NodeID 
         }
 
         // Update all edges visited in the previous loop
-        for (int t = 0; t <= std::max(t_max, 5); t++) {
+        for (int t = 0; t <= t_max; t++) {
                 if (old_robin >= vertices[u].out_edges.size()) { old_robin = 0; }
                 DEdge* uw = vertices[u].out_edges[old_robin];
                 vertices[uw->target].in_edges.update(uw, vertices[u].out_degree);

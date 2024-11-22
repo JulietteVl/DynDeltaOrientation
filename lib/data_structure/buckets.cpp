@@ -6,16 +6,17 @@ double lambda_precomp;
 
 Buckets::Buckets(const DeltaOrientationsConfig& config, int n) {
         // precompute lambda term
-        lambda_precomp = 1.0 / (log(1 + config.lambda));
+        lambda_precomp = config.lambda_precomp;
         b = config.b;
+        offset = config.offset;
 }
 
 Buckets::~Buckets() = default;
 
 int Buckets::get_bucket_id(const int du) const {
-        float f = b * 4;
         float duf = du;
-        return static_cast<int>(log(std::max(duf, f)) * lambda_precomp);
+        if (duf < 4 * b) { return 0; }
+        return static_cast<int>(log(duf) * lambda_precomp) - offset;
 }
 
 void Buckets::add(DEdge* uv, int out_degree, int bucket_v) {
@@ -130,7 +131,7 @@ void Buckets::remove(DEdge* uv) {
 
         int j = uv->bucket;
 
-        if (buckets[uv->bucket].bucket_elements.empty()) {
+        if (buckets[j].bucket_elements.empty()) {
                 int p = buckets[j].prev;
                 int n = buckets[j].next;
                 if (n != -1) { // j is not max bucket
@@ -139,10 +140,10 @@ void Buckets::remove(DEdge* uv) {
                 if (p != -1) { // j is not lowest bucket
                         buckets[p].next = buckets[j].next;
                 }
-                if (j ==
-                        max_bucketID) { // because of the self loop, there is always a bucket
+                if (j == max_bucketID) { // because of the self loop, there is always a bucket
                         max_bucketID = buckets[max_bucketID].prev;
-                        }
+                        buckets.resize(max_bucketID + 1);
+                }
 
                 buckets[j].bucketID = -1;
                 buckets[j].next = -1;
