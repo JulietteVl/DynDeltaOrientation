@@ -16,14 +16,9 @@ public:
         // contains j, Bj for different j. External list in sorted order, internal
         // list Bj in arbitrary order. Bj contains in neighbours w s.t. j = log(d+(w))
         std::vector<SingleBucket> buckets;
-        int max_bucketID = -1; // needed in delete
-        int b;
-        float lambda_precomp;
-        int offset;
 
 public:
         Buckets();
-        explicit Buckets(const DeltaOrientationsConfig& config, int n);
         ~Buckets();
         int get_bucket_id(int du) const;
         void add(DEdge* uv, int out_degree, int bucket_v);
@@ -31,7 +26,7 @@ public:
         void update(DEdge* uv, int outdegree_u);
         DEdge* get_max();
 };
-
+void setup_variables(const DeltaOrientationsConfig& config);
 struct DEdge {
         DEdge* mirror; // vu
         // Vertex *source;
@@ -47,20 +42,16 @@ struct DEdge {
 
 struct Vertex {
         std::vector<DEdge*> out_edges;
+      //  std::set<DEdge*> deleted_out_edges;
         Buckets in_edges;
         DEdge* self_loop;
-        unsigned int out_degree = 0; // out degree
+        unsigned int out_degree = 0; // out degree, //TODO remove
         unsigned int robin = 0;
 };
 
 struct SingleBucket {
-        int bucketID = -1;
         std::vector<DEdge*> bucket_elements;
-        int prev = -1;
-        int next = -1;
-
         SingleBucket() {}
-        SingleBucket(unsigned int bucket_ID) { bucketID = bucket_ID; }
         ~SingleBucket() {}
 };
 

@@ -1,0 +1,9 @@
+BasedOnStyle: Google
+ColumnLimit: 200
+IndentWidth: 8
+DisableFormat: true
+---
+Language: Cpp
+DerivePointerAlignment: false
+---
+Language: Proto

@@ -13,8 +13,9 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(
 
         m_adj.resize(GOrientation->number_of_nodes());
         vertices.resize(GOrientation->number_of_nodes());
+        setup_variables(config);
         for (int i = 0; i < GOrientation->number_of_nodes(); i++) {
-                vertices[i].in_edges = Buckets(config, GOrientation->number_of_nodes());
+                vertices[i].in_edges = Buckets();
                 vertices[i].self_loop = new DEdge(i);
                 edge_allocator.push_back(vertices[i].self_loop);
                 vertices[i].self_loop->mirror = vertices[i].self_loop;
@@ -70,7 +71,8 @@ void dyn_edge_orientation_CCHHQRS::handleDeletion(NodeID source, NodeID target) 
 // Naive version
 void dyn_edge_orientation_CCHHQRS::insert_directed(DEdge* uv, NodeID u) { // NOLINT(*-no-recursion)
         add(uv, u);
-        DEdge* uw_min = vertices[u].out_edges.back();
+         DEdge* uw_min = vertices[u].out_edges.front();
+        // DEdge* uw_min = vertices[u].out_edges.back();
 
         // find the out neighbour of minimum out degree
         for (DEdge* uw : vertices[u].out_edges) {
@@ -117,30 +119,34 @@ void dyn_edge_orientation_CCHHQRS::insert_directed_worst_case(DEdge* uv, NodeID 
         int old_robin = vertices[u].robin;
         // Round robin
         unsigned int out_edges_size = vertices[u].out_edges.size();
-        for (int t = 0; t < std::min(robin_size, out_edges_size); t++) {
-                if (vertices[u].robin >= out_edges_size){ vertices[u].robin = 0; }
-                DEdge* uw = vertices[u].out_edges[vertices[u].robin];
+        auto max_val_loop= std::min(robin_size, out_edges_size);
+        const auto out_deg = vertices[u].out_degree;
+        auto& u_= vertices[u];
+        for (int t = 0; t < max_val_loop; t++) {
+                if (u_.robin >= out_edges_size){ u_.robin = 0; }
+                DEdge* uw = u_.out_edges[u_.robin];
                 // Find
-                if (vertices[u].out_degree > std::max(
-                        static_cast<float>(config.b),
-                        (1 + config.lambda) * vertices[uw->target].out_degree + config.theta
+                if (u_.out_degree > std::max(
+                       (double) config.b,
+                        vertices[uw->target].out_degree *(1.0 + config.lambda) + config.theta
                         )){
                         remove(uw, u);
                         insert_directed_worst_case(uw->mirror, uw->target);
-                        vertices[u].robin++;
-                        if (vertices[u].robin >= vertices[u].out_edges.size()){ vertices[u].robin = 0; }
+                        u_.robin++;
+                        if (u_.robin >= u_.out_edges.size()){ u_.robin = 0; }
                         t_max = t;
                         break;
                 }
-                vertices[u].robin++;
-                if (vertices[u].robin >= vertices[u].out_edges.size()){ vertices[u].robin = 0; }
+                u_.robin++;//= ( u_robin+1) % u_.out_edges.size();
+                if (u_.robin >= u_.out_edges.size()){ u_.robin = 0; }
         }
-
+       // u_.robin = u_robin;
         // Update all edges visited in the previous loop
+       //if(t_max>0) std::cout<<t_max<<std::endl;
         for (int t = 0; t <= t_max; t++) {
-                if (old_robin >= vertices[u].out_edges.size()) { old_robin = 0; }
-                DEdge* uw = vertices[u].out_edges[old_robin];
-                vertices[uw->target].in_edges.update(uw, vertices[u].out_degree);
+                if (old_robin >= u_.out_edges.size()) { old_robin = 0; }
+                DEdge* uw = u_.out_edges[old_robin];
+                vertices[uw->target].in_edges.update(uw, u_.out_degree);
                 old_robin ++;
         }
 }
@@ -173,7 +179,7 @@ void dyn_edge_orientation_CCHHQRS::add(DEdge* uv, NodeID u) {
                 uv->location_out_neighbours = vertices[u].out_edges.size() - 1;
                 // insert u in the in neighbours of v
                 vertices[uv->target].in_edges.add(uv, vertices[u].out_degree, vertices[uv->target].self_loop->bucket);
-        }
+        } 
 }
 
 void dyn_edge_orientation_CCHHQRS::remove(DEdge* uv, NodeID u) {
