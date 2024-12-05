@@ -36,6 +36,7 @@ public:
                         for (unsigned j = 0; j < m_adj[i].size(); j++) { GOrientation->new_edge(i, m_adj[i][j]); }
                 }
                 for (DEdge* p: edge_allocator) { delete p; }
+        //        std::cout<<del_events<<std::endl;
         };
 
         bool adjacent(NodeID source, NodeID target) override {
@@ -51,6 +52,7 @@ public:
         }
 
 private:
+      //  int del_events=0;
         unsigned int robin_size = 0;
         std::vector<std::vector<NodeID>> m_adj; // For post processing only
         std::vector<DEdge*> edge_allocator; // TODO delete edges at the end
@@ -61,6 +63,16 @@ private:
         void delete_directed_worst_case(DEdge* uv, NodeID u);
         void add(DEdge* uv, NodeID u);
         void remove(DEdge* uv, NodeID u);
+        /*void assert_edges(unsigned int u){
+                for(int i=0;i<vertices[u].active_edges;i++){
+                       auto * uv = vertices[u].out_edges[i];
+                        assert(uv->count>0);
+                          
+                }
+                for(auto* uv:vertices[u].out_edges){
+                        assert(vertices[u].out_edges[uv->location_out_neighbours]==uv);
+                }
+        }*/
 };
 
 #endif

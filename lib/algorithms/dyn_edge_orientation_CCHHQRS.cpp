@@ -38,6 +38,7 @@ void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source, NodeID target)
         for (unsigned i = 0; i < config.b; i++) {
                 if (vertices[source].out_degree <= vertices[target].out_degree) { insert_directed_worst_case(new_uv, source); }
                 else { insert_directed_worst_case(new_vu, target); }
+                //Insert Directed is currently not adjusted for this new structure
         }
 }
 
@@ -65,6 +66,25 @@ void dyn_edge_orientation_CCHHQRS::handleDeletion(NodeID source, NodeID target) 
         while (uv->count + vu->count > 0) {
                 if (uv->count >= vu->count) { delete_directed_worst_case(uv, source); }
                 else { delete_directed_worst_case(vu, target); }
+        }
+        //remove out of arrays
+        auto & v = vertices[vu->mirror->target];
+        auto & u = vertices[uv->mirror->target];
+
+if(uv->location_out_neighbours!=-1){
+
+        std::swap(u.out_edges[u.out_edges.size()-1],u.out_edges[uv->location_out_neighbours]);
+        u.out_edges[uv->location_out_neighbours]->location_out_neighbours = uv->location_out_neighbours;
+        u.out_edges.pop_back();
+}
+if(vu->location_out_neighbours!=-1){
+assert(v.out_edges.size()>0);
+assert(vu->location_out_neighbours<v.out_edges.size());
+assert(vu->location_out_neighbours>=0);
+
+        std::swap(v.out_edges[v.out_edges.size()-1],v.out_edges[vu->location_out_neighbours]);
+        v.out_edges[vu->location_out_neighbours]->location_out_neighbours = vu->location_out_neighbours;
+        v.out_edges.pop_back();
         }
 }
 
@@ -114,16 +134,19 @@ void dyn_edge_orientation_CCHHQRS::delete_directed(
 // Worst case version
 void dyn_edge_orientation_CCHHQRS::insert_directed_worst_case(DEdge* uv, NodeID u) {
         // NOLINT(*-no-recursion)
+     //   assert_edges(u);
         add(uv, u);
+      //  assert_edges(u);
         int t_max = 0;
         int old_robin = vertices[u].robin;
         // Round robin
-        unsigned int out_edges_size = vertices[u].out_edges.size();
-        auto max_val_loop= std::min(robin_size, out_edges_size);
+       // unsigned int out_edges_size = vertices[u].out_edges.size();
+        auto max_val_loop= std::min(robin_size, vertices[u].active_edges);
         const auto out_deg = vertices[u].out_degree;
         auto& u_= vertices[u];
         for (int t = 0; t < max_val_loop; t++) {
-                if (u_.robin >= out_edges_size){ u_.robin = 0; }
+                if (u_.robin >= vertices[u].active_edges){ u_.robin = 0; }
+                assert(u_.robin<u_.active_edges);
                 DEdge* uw = u_.out_edges[u_.robin];
                 // Find
                 if (u_.out_degree > std::max(
@@ -133,18 +156,18 @@ void dyn_edge_orientation_CCHHQRS::insert_directed_worst_case(DEdge* uv, NodeID 
                         remove(uw, u);
                         insert_directed_worst_case(uw->mirror, uw->target);
                         u_.robin++;
-                        if (u_.robin >= u_.out_edges.size()){ u_.robin = 0; }
+                        if (u_.robin >=vertices[u].active_edges){ u_.robin = 0; }
                         t_max = t;
                         break;
                 }
                 u_.robin++;//= ( u_robin+1) % u_.out_edges.size();
-                if (u_.robin >= u_.out_edges.size()){ u_.robin = 0; }
         }
+         if (u_.robin >=vertices[u].active_edges){ u_.robin = 0; }
        // u_.robin = u_robin;
         // Update all edges visited in the previous loop
        //if(t_max>0) std::cout<<t_max<<std::endl;
         for (int t = 0; t <= t_max; t++) {
-                if (old_robin >= u_.out_edges.size()) { old_robin = 0; }
+                if (old_robin >= vertices[u].active_edges) { old_robin = 0; }
                 DEdge* uw = u_.out_edges[old_robin];
                 vertices[uw->target].in_edges.update(uw, u_.out_degree);
                 old_robin ++;
@@ -163,7 +186,7 @@ void dyn_edge_orientation_CCHHQRS::delete_directed_worst_case(
                                                        }
         else {
                 for (int t = 0; t < robin_size; t++) {
-                        if (vertices[u].robin >= vertices[u].out_edges.size()) { vertices[u].robin = 0; }
+                        if (vertices[u].robin >= vertices[u].active_edges) { vertices[u].robin = 0; }
                         DEdge* uw = vertices[u].out_edges[vertices[u].robin];
                         vertices[uw->target].in_edges.update(uw, vertices[u].out_degree);
                         vertices[u].robin ++;
@@ -175,8 +198,22 @@ void dyn_edge_orientation_CCHHQRS::add(DEdge* uv, NodeID u) {
         vertices[u].out_degree++;
         uv->count++;
         if (uv->count == 1) { // new edge
-                vertices[u].out_edges.push_back(uv);
-                uv->location_out_neighbours = vertices[u].out_edges.size() - 1;
+                if(uv->location_out_neighbours==-1){
+                      // std::cout<<"inserting "<<(size_t)uv<<std::endl;
+                        uv->location_out_neighbours = vertices[u].out_edges.size();
+                        vertices[u].out_edges.push_back(uv);
+                }
+                if(vertices[u].active_edges < vertices[u].out_edges.size()-1){
+                        //std::cout<<"swapping "<<(size_t)uv<<std::endl;
+                        assert(vertices[u].active_edges<=uv->location_out_neighbours);
+                        assert(vertices[u].out_edges[uv->location_out_neighbours]==uv);
+                        std::swap(vertices[u].out_edges[vertices[u].active_edges],vertices[u].out_edges[uv->location_out_neighbours]);
+                        vertices[u].out_edges[uv->location_out_neighbours]->location_out_neighbours = uv->location_out_neighbours;
+                        uv->location_out_neighbours = vertices[u].active_edges;           
+                }
+                
+                vertices[u].active_edges++;
+                assert(vertices[u].out_edges[vertices[u].active_edges-1]==uv);
                 // insert u in the in neighbours of v
                 vertices[uv->target].in_edges.add(uv, vertices[u].out_degree, vertices[uv->target].self_loop->bucket);
         } 
@@ -184,16 +221,20 @@ void dyn_edge_orientation_CCHHQRS::add(DEdge* uv, NodeID u) {
 
 void dyn_edge_orientation_CCHHQRS::remove(DEdge* uv, NodeID u) {
         // decrement the multiplicity of the edge
+        assert(uv->count>0);
         uv->count--;
-
+ if (vertices[u].robin >=vertices[u].active_edges){ vertices[u].robin = 0; }
         int robin = vertices[u].robin;
         int current_location = uv->location_out_neighbours;
+
+        assert(current_location<vertices[u].active_edges);
         // if the new multiplicity is 0, remove the element.
         if (uv->count == 0) {
+              //  del_events++;
                 if (vertices[u].out_edges.size() > 1) {
                         if (current_location >= robin - 1) {
                                 std::swap(vertices[u].out_edges[current_location],
-                                    vertices[u].out_edges[vertices[u].out_edges.size() - 1]);
+                                    vertices[u].out_edges[vertices[u].active_edges-1]);
                                 vertices[u].out_edges[current_location]->location_out_neighbours = current_location;
                                 if (current_location == robin - 1) { robin --; }
                         }
@@ -203,14 +244,15 @@ void dyn_edge_orientation_CCHHQRS::remove(DEdge* uv, NodeID u) {
                                     vertices[u].out_edges[robin]);
                                 vertices[u].out_edges[current_location]->location_out_neighbours = current_location;
                                 // swap the element to delete (at robin location) with the end
-                                std::swap(vertices[u].out_edges[vertices[u].out_edges.size() - 1],
+                                std::swap(vertices[u].out_edges[vertices[u].active_edges-1],
                                     vertices[u].out_edges[robin]);
                                 vertices[u].out_edges[robin]->location_out_neighbours = robin;
                                 robin --;
                         }
                 }
-                vertices[u].out_edges.resize(vertices[u].out_edges.size() - 1);
-                uv->location_out_neighbours = -1; //vertices[u].out_edges.size();
+                //vertices[u].out_edges.resize(vertices[u].out_edges.size() - 1);
+                vertices[u].active_edges--;
+                uv->location_out_neighbours = vertices[u].active_edges; //vertices[u].out_edges.size();
                 vertices[uv->target].in_edges.remove(uv);
         }
         if (uv->count < 0) { std::cerr << "Error: edge count below 0" << std::endl; }

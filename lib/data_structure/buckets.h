@@ -34,7 +34,7 @@ struct DEdge {
         int count = 0;
         int bucket; // location of the edge
         int location_in_neighbours;
-        int location_out_neighbours; // location of edge in the out neighbour list of
+        int location_out_neighbours=-1; // location of edge in the out neighbour list of
         // source
         DEdge(NodeID v) { target = v; };
         DEdge() {}
@@ -46,6 +46,7 @@ struct Vertex {
         Buckets in_edges;
         DEdge* self_loop;
         unsigned int out_degree = 0; // out degree, //TODO remove
+        unsigned int active_edges=0;
         unsigned int robin = 0;
 };
 
