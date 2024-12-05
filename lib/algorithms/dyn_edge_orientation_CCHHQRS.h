@@ -35,7 +35,7 @@ public:
                 for (unsigned i = 0; i < GOrientation->number_of_nodes(); i++) {
                         for (unsigned j = 0; j < m_adj[i].size(); j++) { GOrientation->new_edge(i, m_adj[i][j]); }
                 }
-                for (DEdge* p: edge_allocator) { delete p; }
+                //for (DEdge* p: edge_allocator) { delete p; }
         //        std::cout<<del_events<<std::endl;
         };
 
@@ -55,7 +55,8 @@ private:
       //  int del_events=0;
         unsigned int robin_size = 0;
         std::vector<std::vector<NodeID>> m_adj; // For post processing only
-        std::vector<DEdge*> edge_allocator; // TODO delete edges at the end
+        std::vector<DEdge> edge_arena; // TODO delete edges at the end
+        size_t edge_arena_ptr=0;
         std::vector<Vertex> vertices;
         void insert_directed(DEdge* uv, NodeID u);
         void delete_directed(DEdge* uv, NodeID u);

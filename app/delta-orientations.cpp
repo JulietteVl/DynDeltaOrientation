@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
         std::cout <<  "io took " <<  t.elapsed()  << std::endl; 
 
         //configure algorithm based on input parameters
-        std::shared_ptr<dyn_graph_access> G = std::make_shared<dyn_graph_access>(n);
+        std::shared_ptr<dyn_graph_access> G = std::make_shared<dyn_graph_access>(n,edge_sequence.size());
         DeltaOrientationsResult res;
         std::shared_ptr<dyn_edge_orientation> algorithm = getdyn_edge_orientation_instance(config.algorithmType, G, config, res);
 

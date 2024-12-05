@@ -14,10 +14,12 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(
         m_adj.resize(GOrientation->number_of_nodes());
         vertices.resize(GOrientation->number_of_nodes());
         setup_variables(config);
+        edge_arena.resize(2*(GOrientation->number_of_ops())+ GOrientation->number_of_nodes());
+
         for (int i = 0; i < GOrientation->number_of_nodes(); i++) {
                 vertices[i].in_edges = Buckets();
-                vertices[i].self_loop = new DEdge(i);
-                edge_allocator.push_back(vertices[i].self_loop);
+                vertices[i].self_loop = &edge_arena[edge_arena_ptr++];
+                vertices[i].self_loop->target=i;
                 vertices[i].self_loop->mirror = vertices[i].self_loop;
                 add(vertices[i].self_loop, i);
         }
@@ -27,10 +29,11 @@ void dyn_edge_orientation_CCHHQRS::handleInsertion(NodeID source, NodeID target)
         if (source == target) { return; }
 
         // make the edges
-        DEdge* new_uv = new DEdge(target);
-        DEdge* new_vu = new DEdge(source);
-        edge_allocator.push_back(new_uv);
-        edge_allocator.push_back(new_vu);
+        assert(edge_arena_ptr<edge_arena.size());
+        DEdge* new_uv = &edge_arena[edge_arena_ptr++];
+         new_uv->target = target ;
+        DEdge* new_vu =&edge_arena[edge_arena_ptr++];
+        new_vu->target = source;
 
         new_uv->mirror = new_vu;
         new_vu->mirror = new_uv;

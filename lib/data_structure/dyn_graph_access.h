@@ -18,9 +18,14 @@
 //#include "IGraph.h"
 
 class dyn_graph_access {
+    size_t m=0;
    public:
     dyn_graph_access();
     explicit dyn_graph_access(NodeID n);
+    explicit dyn_graph_access(NodeID n,EdgeID _m):dyn_graph_access(n){
+        m= _m;
+    }
+
     ~dyn_graph_access();
 
     // construction of the graph
@@ -38,6 +43,8 @@ class dyn_graph_access {
 
     // access
     inline EdgeID number_of_edges();
+    inline EdgeID number_of_ops(){return m;}
+
     inline NodeID number_of_nodes();
 
     inline EdgeID get_first_edge(NodeID node);
