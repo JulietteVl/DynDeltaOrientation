@@ -46,13 +46,15 @@ void Buckets::update(DEdge* uv, int outdegree_u) {
 
 void Buckets::remove(DEdge* uv) {
   //TODO replace with asserts
-     /*   if(buckets[uv->bucket].bucket_elements.size() <= uv->location_in_neighbours || uv->location_in_neighbours == -1) {
+        if(buckets[uv->bucket].bucket_elements.size() <= uv->location_in_neighbours || uv->location_in_neighbours == -1) {
                 std::cerr << "The edge you are trying to delete is not present in the bucket at all" << std::endl;
+               throw;
         }
         if(buckets[uv->bucket].bucket_elements[uv->location_in_neighbours]->target != uv->target ||
                 buckets[uv->bucket].bucket_elements[uv->location_in_neighbours]->mirror->target != uv->mirror->target) {
                 std::cerr << "The edge you are trying to delete is not present in the bucket location" << std::endl;
-        }*/
+                throw;
+        }
         if (buckets[uv->bucket].bucket_elements.size() > 1) {
                 std::swap(buckets[uv->bucket].bucket_elements[uv->location_in_neighbours],
                           buckets[uv->bucket].bucket_elements[buckets[uv->bucket].bucket_elements.size() - 1]);
@@ -67,5 +69,8 @@ void Buckets::remove(DEdge* uv) {
 }
 
 DEdge* Buckets::get_max(){
+        while(buckets.back().bucket_elements.empty()){
+                buckets.pop_back();
+        }
         return buckets.back().bucket_elements.front();
 }

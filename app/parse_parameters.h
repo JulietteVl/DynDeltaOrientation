@@ -36,7 +36,7 @@ int parse_parameters(int argn, char **argv,
         struct arg_dbl *brodalfagerberg_growth               = arg_dbl0(NULL, "brodalfagerberg_growth", NULL, "Growth factor in brodal fagerberg.");
         struct arg_lit *relax_ilp                            = arg_lit0(NULL, "relax_ilp", "");
         struct arg_int *b                                    = arg_int0(NULL, "b", NULL, "Number of copies of each edge in CCHHQRS.");
-        struct arg_int *lambda                               = arg_int0(NULL, "lambda", NULL, "Parameter in CCHHQRS.");
+        struct arg_dbl *lambda                               = arg_dbl0(NULL, "lambda", NULL, "Parameter in CCHHQRS.");
         struct arg_int *theta                                = arg_int0(NULL, "theta", NULL, "Choice of invariant in CCHHQRS.");
 
 #ifdef USEILP
@@ -53,7 +53,7 @@ int parse_parameters(int argn, char **argv,
 #ifdef USEILP
                 help, filename, filename_output, user_seed, algorithm, flips, prune_flips, depth, rw_reps, brodalfagerberg_growth, time_limit_ilp,
 #else                
-                help, filename, filename_output, user_seed, algorithm, flips, prune_flips, depth, rw_reps, brodalfagerberg_growth,
+                help, filename, filename_output, user_seed, algorithm, flips, prune_flips, depth, rw_reps, brodalfagerberg_growth,lambda,b,theta,
 #endif
                 end
         };
@@ -84,7 +84,15 @@ int parse_parameters(int argn, char **argv,
         if(filename_output->count > 0) {
                 orientation_config.output_filename = filename_output->sval[0];
         }
-
+        if(lambda->count>0){
+                orientation_config.lambda = lambda->dval[0];
+        }
+        if(theta->count>0){
+                orientation_config.theta = theta->ival[0];
+        }
+        if(b->count>0){
+                orientation_config.b = b->ival[0];
+        }
         if (user_seed->count > 0) {
                 orientation_config.seed = user_seed->ival[0];
         }

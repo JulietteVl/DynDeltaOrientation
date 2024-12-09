@@ -8,6 +8,8 @@ dyn_edge_orientation_CCHHQRS::dyn_edge_orientation_CCHHQRS(
         : dyn_edge_orientation(GOrientation, config, result) {
         if (config.lambda == 0 || config.theta == 0 && config.b < 1 / config.lambda) {
                 std::cerr << "Illegal choice of parameters" << std::endl;
+                std::cout<<config.b<<" "<<config.lambda<<" "<< 1 / config.lambda<<std::endl;
+
         }
         robin_size = std::max(10.0, 2.0 / config.lambda) + 1;
 
