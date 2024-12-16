@@ -61,6 +61,8 @@ int main(int argc, char** argv) {
         algorithm->end();
 
         std::cout <<  "maxOutDegree \t " <<  G->maxDegree()  << std::endl;
+        std::cout <<  "squaredDegreeSum \t " << std::fixed<< G->squaredSumDegree()  << std::endl;
+
 
         //// store orientation in file
         if( config.output_filename.size() != 0) {

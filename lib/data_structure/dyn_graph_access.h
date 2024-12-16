@@ -61,7 +61,14 @@ class dyn_graph_access {
         }
         return currentMax;
     }
-
+    double squaredSumDegree() {
+        double sum=0;
+        for (NodeID node = 0; node < node_count; ++node) {
+                EdgeID deg = getNodeDegree(node);
+                sum += (deg)*(deg);
+        }
+        return sum;
+    }
    private:
     // %%%%%%%%%%%%%%%%%%% DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     std::vector<std::vector<DynEdge> > m_edges;
